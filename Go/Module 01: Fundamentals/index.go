@@ -1,21 +1,23 @@
 package main
 
+import "fmt"
+
 // 1. Variáveis
 // Declaração de Variáveis
 // Go oferece várias formas de declarar variáveis:
 // Forma 1: var com tipo explícito
 
-var name string
-var age int
-var height float64
-var isStudent bool
+var nome1 string
+var idade1 int
+var altura1 float64
+var isEstudante1 bool
 
 // Forma 2: var com inicialização (tipo inferido)
 
-var name = "John"
-var age = 25
-var height = 1.75
-var isStudent = true
+var nome2 = "John"
+var idade2 = 25
+var altura2 = 1.75
+var isEstudante2 = true
 
 // Forma 3: := (declaração e inicialização)
 
@@ -27,36 +29,40 @@ var isStudent = true
 // ⚠️ IMPORTANTE: O operador := só funciona dentro de funções!
 func main() {
     // ✅ CORRETO - := funciona dentro de funções
-	name := "John"
-	age := 25
-	height := 1.75
-	isStudent := true
+	nome3 := "John"
+	idade3 := 25
+	altura3 := 1.75
+	isEstudante3 := true
+	
+	// Usar as variáveis para evitar erro de "declared and not used"
+	fmt.Printf("Nome: %s, Idade: %d, Altura: %.2f, É estudante: %t\n", 
+		nome3, idade3, altura3, isEstudante3)
 }
 
 // Forma 4: Múltiplas variáveis
 // Mesmo tipo
-var x, y, z int
+// var x, y, z int
 
 // Tipos diferentes
 var (
-    nome   string
-    idade  int
-    altura float64
+    // nome   string
+    // idade  int
+    // altura float64
 )
 
 // Com inicialização
-var a, b, c = 1, 2, 3
+// var a, b, c = 1, 2, 3
 
-// Declaração curta múltipla
-nome, idade := "Maria", 30
+// Declaração curta múltipla (só funciona dentro de funções!)
+// nome2, idade := "Maria", 30  // ❌ ERRO fora de função
 
 // Regras de Nomenclatura
 // ✅ Permitido:
-nome         // minúscula
-Nome         // Maiúscula (exportado/público)
-nome123      // com números
-_nome        // com underscore
-nomeCompleto // camelCase
+// nome         // minúscula
+// Nome         // Maiúscula (exportado/público)
+// nome123      // com números
+// _nome        // com underscore
+// nomeCompleto // camelCase
 
 // 2. Tipos de Dados
 // Tipos Numéricos Inteiros
@@ -132,8 +138,8 @@ var avogadro float64 = 6.022e23
 var z1 complex64 = 3 + 4i
 var z2 complex128 = complex(5, 6)  // 5 + 6i
 
-real := real(z1)  // 3
-imag := imag(z1)  // 4
+// real := real(z1)  // 3
+// imag := imag(z1)  // 4
 
 //Tipo Boolean
 
@@ -173,18 +179,18 @@ var vazia string  // "" (zero value)
 
 // Operações com Strings
 // Concatenação
-nome := "João"
-sobrenome := "Silva"
-nomeCompleto := nome + " " + sobrenome  // "João Silva"
+// nome := "João"
+// sobrenome := "Silva"
+// nomeCompleto := nome + " " + sobrenome  // "João Silva"
 
 // Tamanho (bytes, não caracteres!)
-tamanho := len("Olá")  // 4 bytes (á ocupa 2 bytes)
+// tamanho := len("Olá")  // 4 bytes (á ocupa 2 bytes)
 
 // Acessar caractere por índice (retorna byte)
-primeira := nome[0]  // 'J' (tipo byte/uint8)
+// primeira := nome[0]  // 'J' (tipo byte/uint8)
 
 // Substring
-sub := nome[0:3]  // "Joã"
+// sub := nome[0:3]  // "Joã"
 
 // String é imutável!
 // nome[0] = 'X'  // ❌ ERRO - não pode modificar
@@ -199,19 +205,19 @@ rune  |  32 bits       | int32                          |
 --------------------------------------------------------|
 */
 
-texto := "Olá, 世界"
+// texto := "Olá, 世界"
 
 // len() retorna bytes, não caracteres
-fmt.Println(len(texto))  // 12 bytes
+// fmt.Println(len(texto))  // 12 bytes
 
 // Para contar caracteres, use runes
-runes := []rune(texto)
-fmt.Println(len(runes))  // 6 caracteres
+// runes := []rune(texto)
+// fmt.Println(len(runes))  // 6 caracteres
 
 // Iterar sobre runes
-for i, r := range "Olá" {
-    fmt.Printf("Índice: %d, Rune: %c\n", i, r)
-}
+// for i, r := range "Olá" {
+//     fmt.Printf("Índice: %d, Rune: %c\n", i, r)
+// }
 // Saída:
 // Índice: 0, Rune: O
 // Índice: 1, Rune: l
@@ -226,13 +232,13 @@ const NomeApp = "MeuApp"
 
 // Múltiplas constantes
 const (
-    Domingo = 0
-    Segunda = 1
-    Terca   = 2
-    Quarta  = 3
-    Quinta  = 4
-    Sexta   = 5
-    Sabado  = 6
+    Domingo1 = 0
+    Segunda2 = 1
+    Terca3   = 2
+    Quarta4 = 3
+    Quinta5  = 4
+    Sexta6   = 5
+    Sabado7  = 6
 )
 
 // Com tipo explícito
@@ -280,87 +286,87 @@ const (
 
 // Constantes Tipadas vs Não-Tipadas
 // Não-tipada (mais flexível)
-const x = 42
-var a int = x
-var b float64 = x
-var c byte = x
+const x1 = 42
+var a2 int = x1
+var b3 float64 = x1
+var c4 byte = x1
 // Todas funcionam!
 
 // Tipada (mais restrita)
-const y int = 42
-var d int = y        // OK
+const y1 int = 42
+var d int = y1       // OK
 // var e float64 = y // ❌ ERRO - tipos incompatíveis
 
 // 4. Operadores
 // Operadores Aritméticos
-a := 10
-b := 3
+// a := 10
+// b := 3
 
-soma := a + b        // 13
-sub := a - b         // 7
-mult := a * b        // 30
-div := a / b         // 3 (divisão inteira!)
-resto := a % b       // 1 (módulo)
+// soma := a + b        // 13
+// sub := a - b         // 7
+// mult := a * b        // 30
+// div := a / b         // 3 (divisão inteira!)
+// resto := a % b       // 1 (módulo)
 
 // Divisão com float
-divFloat := float64(a) / float64(b)  // 3.333...
+// divFloat := float64(a) / float64(b)  // 3.333...
 
 // Incremento e decremento
-a++  // a = a + 1
-b--  // b = b - 1
+// a++  // a = a + 1
+// b--  // b = b - 1
 
 // ❌ NÃO existe ++a ou --b em Go
 // ❌ NÃO existe a = b++ em Go (++ não retorna valor)
 
 // Operadores de Atribuição
-a = 10
-b = 3
-a += b  // a = a + b = 13
-a -= b  // a = a - b = 10
-a *= b  // a = a * b = 30
-a /= b  // a = a / b = 10
+// a = 10
+// b = 3
+// a += b  // a = a + b = 13
+// a -= b  // a = a - b = 10
+// a *= b  // a = a * b = 30
+// a /= b  // a = a / b = 10
 
 // Operadores de Comparação
-a := 10
-b := 5
+// a := 10
+// b := 5
 
-a == b   // false (igual)
-a != b   // true  (diferente)
-a > b    // true  (maior)
-a < b    // false (menor)
-a >= b   // true  (maior ou igual)
-a <= b   // false (menor ou igual)
+// a == b   // false (igual)
+// a != b   // true  (diferente)
+// a > b    // true  (maior)
+// a < b    // false (menor)
+// a >= b   // true  (maior ou igual)
+// a <= b   // false (menor ou igual)
 
 // Operadores Lógicos
-t := true
-f := false
+// t := true
+// f := false
 
-t && f   // false (E lógico - AND)
-t || f   // true  (OU lógico - OR)
-!t       // false (NÃO lógico - NOT)
+// t && f   // false (E lógico - AND)
+// t || f   // true  (OU lógico - OR)
+// !t       // false (NÃO lógico - NOT)
 
 // Short-circuit evaluation
-func custoso() bool {
-    fmt.Println("Executado!")
-    return true
-}
+// func custoso() bool {
+//     fmt.Println("Executado!")
+//     return true
+// }
 
-false && custoso()  // custoso() NÃO é executado
-true || custoso()   // custoso() NÃO é executado
+// false && custoso()  // custoso() NÃO é executado
+// true || custoso()   // custoso() NÃO é executado
 
 // Operadores Bitwise
-a := 60  // 0011 1100
-b := 13  // 0000 1101
+// a := 60  // 0011 1100
+// b := 13  // 0000 1101
 
-a & b    // 12   (0000 1100) - AND
-a | b    // 61   (0011 1101) - OR
-a ^ b    // 49   (0011 0001) - XOR
-a &^ b   // 48   (0011 0000) - AND NOT (bit clear)
-^a       // -61  (1100 0011) - NOT
+// a & b    // 12   (0000 1100) - AND
+// a | b    // 61   (0011 1101) - OR
+// a ^ b    // 49   (0011 0001) - XOR
+// a &^ b   // 48   (0011 0000) - AND NOT (bit clear)
+// ^a       // -61  (1100 0011) - NOT
 
 // Shifts
-a << 2   // 240  (1111 0000) - shift left
-a >> 2   // 15   (0000 1111) - shift right
+// a << 2   // 240  (1111 0000) - shift left
+// a >> 2   // 15   (0000 1111) - shift right
 
 // Precedência de Operadores
 // Prioridade (maior para menor):
@@ -370,22 +376,22 @@ a >> 2   // 15   (0000 1111) - shift right
 // 4. &&
 // 5. ||
 
-resultado := 2 + 3 * 4    // 14 (não 20)
-resultado = (2 + 3) * 4   // 20 (com parênteses)
+// resultado := 2 + 3 * 4    // 14 (não 20)
+// resultado = (2 + 3) * 4   // 20 (com parênteses)
 
 // 5. Conversão de Tipos
 // Go é fortemente tipado - conversões precisam ser explícitas!
 // Conversão entre Numéricos
 var i int = 42
 var f float64 = float64(i)  // int → float64
-var u uint = uint(f)         // float64 → uint
+var u7 uint = uint(f)         // float64 → uint
 
 // Cuidado com perda de precisão!
 var x float64 = 3.99
-var y int = int(x)  // 3 (trunca, não arredonda!)
+var y7 int = int(x)  // 3 (trunca, não arredonda!)
 
 // Overflow
-var a int8 = 127
+var a7 int8 = 127
 // var b int8 = int8(128)  // Overflow! (wrap around)
 
 
