@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/devleo-m/go-zero/internal/infra/config"
+	"github.com/devleo-m/go-zero/internal/infra/database"
 	"github.com/devleo-m/go-zero/internal/infra/logger"
 	"go.uber.org/zap"
 )
@@ -24,8 +25,9 @@ func main() {
 	logger.Info("Configurações carregadas e Logger inicializado.", zap.String("app_env", appEnv))
 
 	// 3. Inicializar Banco de Dados (Será implementado no próximo passo/fase)
-	// db := database.NewPostgresDB(cfg)
+	database.DB = database.NewPostgresDB(cfg)
 	// Se for rodar local sem Docker, pode pular a inicialização do DB por enquanto.
+	defer database.CloseDB()
 
 	// 4. Inicializar o Gin
 	router := gin.Default()
