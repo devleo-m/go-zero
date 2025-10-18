@@ -1,0 +1,39 @@
+services:
+  app:
+    # O build será definido mais tarde com o Dockerfile da aplicação Go
+    # Por enquanto, vamos focar no DB
+    container_name: ${APP_NAME}
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile # Usaremos um Dockerfile separado para desenvolvimento com live-reload (Air)
+    ports:
+      - "${APP_PORT}:8080"
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+    environment:
+      # Variáveis de ambiente da aplicação
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      APP_PORT: ${APP_PORT}
+
+  db:
+    container_name: go_api_db
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
