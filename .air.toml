@@ -1,0 +1,25 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+# Comando para compilar
+cmd = "go build -o ./tmp/main ./cmd/server"
+# Arquivos e pastas a serem ignorados
+exclude_dir = ["assets", "tmp", "vendor", "tests", "docs", "db", "migrations"]
+# Arquivos a serem observados
+include_ext = ["go", "tpl", "tmpl", "html", "yaml", "yml", "json"]
+# Pasta de saída
+bin = "tmp/main"
+# Tempo de espera antes de recompilar
+delay = 500 # ms
+# Variáveis de ambiente
+# env = []
+
+[log]
+# Cor do log (opcional)
+time_format = "2006/01/02 15:04:05"
+color = true
+
+[run]
+# Argumentos de execução (se houver)
+cmds = []
