@@ -21,7 +21,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
       APP_PORT: ${APP_PORT}
-
+      APP_ENV: ${APP_ENV}
   db:
     container_name: go_api_db
     image: postgres:16-alpine
