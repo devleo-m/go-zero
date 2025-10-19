@@ -17,22 +17,22 @@ import (
 var DB *gorm.DB
 
 // NewPostgresDB inicializa e retorna a conexão com o PostgreSQL
-func NewPostgresDB(cfg config.Config) *gorm.DB {
+func NewPostgresDB(cfg *config.Config) *gorm.DB {
 	dsn := cfg.DSN()
-	
+
 	// Configuração do GORM (opcional, mas recomendado)
 	gormConfig := &gorm.Config{
-		// Permite usar a nomenclatura Domain Driven Design (DDD) no Go 
+		// Permite usar a nomenclatura Domain Driven Design (DDD) no Go
 		// e snake_case no banco de dados (UserEntity -> user_entities)
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,
 		},
 		// Configurações de logging do GORM (opcional)
-		// Logger: logger.NewGormLogger(logger.Logger), 
+		// Logger: logger.NewGormLogger(logger.Logger),
 	}
 
 	var err error
-	
+
 	// Tentativa de conexão com retries (essencial em containers, onde o DB pode subir depois da API)
 	for i := 0; i < 5; i++ {
 		DB, err = gorm.Open(postgres.Open(dsn), gormConfig)
@@ -44,8 +44,8 @@ func NewPostgresDB(cfg config.Config) *gorm.DB {
 				logger.Error("Erro ao obter o pool de conexões SQL", err)
 				return nil
 			}
-			sqlDB.SetMaxIdleConns(10)          // Máximo de conexões ociosas
-			sqlDB.SetMaxOpenConns(100)         // Máximo de conexões abertas
+			sqlDB.SetMaxIdleConns(10)           // Máximo de conexões ociosas
+			sqlDB.SetMaxOpenConns(100)          // Máximo de conexões abertas
 			sqlDB.SetConnMaxLifetime(time.Hour) // Tempo máximo de vida de uma conexão
 			return DB
 		}
@@ -56,6 +56,24 @@ func NewPostgresDB(cfg config.Config) *gorm.DB {
 
 	log.Fatal("Não foi possível conectar ao banco de dados após várias tentativas.")
 	return nil // Nunca alcançado devido ao Fatal
+}
+
+// TestConnection testa a conexão com o banco de dados
+func TestConnection() error {
+	if DB == nil {
+		return fmt.Errorf("banco de dados não inicializado")
+	}
+
+	sqlDB, err := DB.DB()
+	if err != nil {
+		return fmt.Errorf("erro ao obter conexão SQL: %w", err)
+	}
+
+	if err := sqlDB.Ping(); err != nil {
+		return fmt.Errorf("falha ao fazer ping no banco: %w", err)
+	}
+
+	return nil
 }
 
 // CloseDB fecha a conexão com o banco de dados (útil para graceful shutdown)

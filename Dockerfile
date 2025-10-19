@@ -8,6 +8,11 @@ WORKDIR /app
 RUN apk add --no-cache git
 RUN go install github.com/air-verse/air@latest
 
+# Copia os arquivos de dependência Go e baixa os módulos
+# Isso otimiza o cache do Docker. Se go.mod e go.sum não mudarem, o cache é usado.
+COPY go.mod go.sum ./
+RUN go mod download
+
 # Copia os arquivos
 COPY . .
 
@@ -15,4 +20,4 @@ COPY . .
 EXPOSE 8080
 
 # Comando para rodar a aplicação com Air (será executado pelo docker-compose)
-CMD ["air", "-c", ".air.toml"]
+# CMD ["air", "-c", ".air.toml"]
