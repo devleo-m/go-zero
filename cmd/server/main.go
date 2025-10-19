@@ -3,11 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/devleo-m/go-zero/internal/infra/config"
 	"github.com/devleo-m/go-zero/internal/infra/database"
 	"github.com/devleo-m/go-zero/internal/infra/logger"
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
@@ -36,8 +37,10 @@ func main() {
 	router.GET("/health", func(c *gin.Context) {
 		logger.Info("Health check realizado com sucesso.")
 		c.JSON(200, gin.H{
-			"status":  "up",
-			"service": "Go Hexagonal API",
+			"status":    "up",
+			"service":   "Go Hexagonal API - HOT RELOAD FUNCIONANDO! 🚀",
+			"message":   "Mudança aplicada automaticamente pelo Air!",
+			"timestamp": time.Now().Format("2006-01-02 15:04:05"),
 		})
 	})
 

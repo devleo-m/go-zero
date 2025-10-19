@@ -1,28 +1,97 @@
-# Configurações do Air para Hot-Reload
+# ===========================================
+# GO ZERO - CONFIGURAÇÃO DO AIR (HOT-RELOAD)
+# ===========================================
 
-# Diretório a ser monitorado para mudanças
+# Diretório raiz do projeto
 root = "."
-# Pasta temporária para o binário compilado
-tmp_dir = "tmp" 
 
+# Pasta temporária para binários compilados
+tmp_dir = "tmp"
+
+# ===========================================
+# CONFIGURAÇÕES DE BUILD
+# ===========================================
 [build]
-# O comando para construir a aplicação Go, gerando um binário temporário
-# Usamos 'main' para ser mais explícito
-cmd = "go build -o ./tmp/main ." 
-# Diretórios a serem excluídos do monitoramento.
-# Adicionamos mais exclusões para aumentar a performance.
-exclude_dir = ["vendor", "node_modules", "testdata", "tmp", "assets", "docs", "tests", "internal/infra/database/migrations"]
-# Extensões de arquivo a serem observadas (apenas se for Go e arquivos de template/config)
-include_ext = ["go", "tpl", "tmpl", "html", "yaml", "yml", "json"]
-# O Air irá sempre re-iniciar quando algo mudar
-stop_on_error = true
+  # Comando para compilar a aplicação
+  # IMPORTANTE: Especificamos o caminho correto do main.go
+  cmd = "go build -o ./tmp/main.exe ./cmd/server"
+  
+  # Binário gerado (com .exe para Windows)
+  bin = "tmp/main.exe"
+  
+  # Delay entre builds (evita rebuilds desnecessários)
+  delay = 1000
+  
+  # Para em caso de erro
+  stop_on_error = true
+  
+  # Comando para executar após o build (opcional)
+  post_cmd = []
+  
+  # Comando para executar antes do build (opcional)
+  pre_cmd = []
 
+# ===========================================
+# CONFIGURAÇÕES DE ARQUIVOS
+# ===========================================
+# Diretórios a serem ignorados
+exclude_dir = ["vendor", "node_modules", "testdata", "tmp", "assets", "docs", "tests", "00-guia", "commands", "bin", ".git", ".cursor"]
+
+# Extensões de arquivo a serem monitoradas
+include_ext = ["go", "tpl", "tmpl", "html", "yaml", "yml", "json", "toml", "env"]
+
+# Arquivos específicos a serem ignorados
+exclude_file = ["*.log", "*.tmp"]
+
+# ===========================================
+# CONFIGURAÇÕES DE EXECUÇÃO
+# ===========================================
 [run]
-# O binário a ser executado (usando o 'main' que definimos no build)
-cmd = "./tmp/main"
-# Pequeno delay para garantir que a construção termine antes de iniciar
-delay = 500 # Reduzimos para 500ms
-# Mata o processo existente antes de iniciar um novo
-send_interrupt = true 
-# O Air deve reiniciar o servidor? Sim, sempre que um arquivo mudar
-rerun = true
+  # Comando para executar o binário
+  cmd = "./tmp/main.exe"
+  
+  # Delay antes de executar
+  delay = 500
+  
+  # Reinicia automaticamente quando arquivos mudam
+  rerun = true
+  
+  # Envia sinal de interrupção antes de matar o processo
+  send_interrupt = true
+  
+  # Delay após enviar sinal de interrupção
+  kill_delay = "0s"
+
+# ===========================================
+# CONFIGURAÇÕES DE LOG
+# ===========================================
+[log]
+  # Mostra apenas logs da aplicação (não do Air)
+  main_only = false
+  
+  # Silencia todos os logs do Air
+  silent = false
+  
+  # Mostra timestamp nos logs
+  time = false
+
+# ===========================================
+# CONFIGURAÇÕES DE TELA
+# ===========================================
+[screen]
+  # Limpa a tela a cada rebuild
+  clear_on_rebuild = true
+  
+  # Mantém posição do scroll
+  keep_scroll = true
+
+# ===========================================
+# CONFIGURAÇÕES DE CORES
+# ===========================================
+[color]
+  # Cores para diferentes partes do output
+  app = "cyan"
+  build = "yellow" 
+  main = "magenta"
+  runner = "green"
+  watcher = "blue"
