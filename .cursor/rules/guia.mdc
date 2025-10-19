@@ -1,0 +1,280 @@
+---
+alwaysApply: true
+---
+
+📋 ROADMAP COMPLETO ATÉ O MVP (Dividido em Etapas)
+ETAPA 1: FUNDAÇÃO E ESTRUTURA 🏗️
+Objetivo: Entender e criar a estrutura base do projeto
+Status: 👈 ESTAMOS AQUI
+1.1. Entender Arquitetura Hexagonal (Conversa)
+
+O que é e por que usar?
+Camadas: Domain → UseCase → Adapters
+Fluxo de dados
+
+1.2. Criar Estrutura de Pastas (Prática)
+
+Criar pastas vazias
+Entender onde cada coisa vai
+Criar README.md explicativo em cada pasta
+
+1.3. Configurar Go Modules (Prática)
+
+Inicializar projeto com go mod init
+Entender go.mod e go.sum
+Adicionar dependências básicas
+
+
+ETAPA 2: AMBIENTE DE DESENVOLVIMENTO 🐳
+Objetivo: Ter tudo rodando localmente
+2.1. Docker Basics (Conversa)
+
+O que é Docker?
+Por que usar?
+Conceitos: Container, Image, Volume
+
+2.2. PostgreSQL com Docker (Prática)
+
+Criar docker-compose.yml
+Subir Postgres
+Conectar com cliente (DBeaver/pgAdmin)
+
+2.3. Redis com Docker (Prática)
+
+Adicionar Redis ao docker-compose
+Testar conexão
+
+2.4. Hot Reload (Air) (Prática)
+
+Instalar Air
+Configurar .air.toml
+Testar reload automático
+
+
+ETAPA 3: CONFIGURAÇÕES E INFRAESTRUTURA ⚙️
+Objetivo: Sistema de configs e logs profissional
+3.1. Variáveis de Ambiente (Prática)
+
+Criar .env
+Usar godotenv
+Boas práticas de segurança
+
+3.2. Sistema de Logs (Prática)
+
+Implementar Zap Logger
+Níveis de log (Debug, Info, Error)
+Logs estruturados
+
+3.3. Validação de Configs (Prática)
+
+Validar configs na inicialização
+Mensagens de erro claras
+
+
+ETAPA 4: DATABASE - MIGRATIONS 🗄️
+Objetivo: Controlar versões do banco
+4.1. O que são Migrations? (Conversa)
+
+Por que usar?
+Up/Down migrations
+Versionamento
+
+4.2. Golang-Migrate (Prática)
+
+Instalar ferramenta
+Criar primeira migration (users)
+Executar up/down
+
+4.3. Makefile para Migrations (Prática)
+
+Comandos: migrate-up, migrate-down
+Automatizar processo
+
+
+ETAPA 5: DOMAIN LAYER (Entidades) 🧠
+Objetivo: Criar as regras de negócio puras
+5.1. Domain-Driven Design Básico (Conversa)
+
+Entidade vs Value Object
+Agregados
+Repository Pattern
+
+5.2. User Entity (Prática)
+
+Criar struct User
+Métodos de negócio
+Validações
+
+5.3. Value Objects (Prática)
+
+Email
+Phone
+Password
+
+5.4. Domain Errors (Prática)
+
+Erros customizados
+Wrapping de erros
+
+
+ETAPA 6: GORM - MODELS E REPOSITORIES 💾
+Objetivo: Persistência de dados
+6.1. GORM Basics (Conversa)
+
+ORM vs SQL puro
+Como GORM funciona
+Hooks e Callbacks
+
+6.2. User Model (GORM) (Prática)
+
+Criar struct com tags GORM
+Conversão Domain ↔ Model
+Hooks (BeforeCreate, BeforeUpdate)
+
+6.3. User Repository (Prática)
+
+Implementar interface
+CRUD completo
+Queries complexas
+
+6.4. Testes de Repository (Prática)
+
+Setup de teste
+Fixtures
+Assertions
+
+
+ETAPA 7: USE CASES (Regras de Aplicação) 🎯
+Objetivo: Orquestrar lógica de negócio
+7.1. Use Case Pattern (Conversa)
+
+Diferença entre Domain e UseCase
+Input/Output DTOs
+Orquestração
+
+7.2. Create User Use Case (Prática)
+
+Validar input
+Chamar repository
+Retornar output
+
+7.3. Authenticate User Use Case (Prática)
+
+Verificar senha
+Gerar JWT
+Registrar login
+
+7.4. Testes de Use Case (Prática)
+
+Mocks de repository
+Testes unitários
+
+
+ETAPA 8: HTTP LAYER (API REST) 🌐
+Objetivo: Expor endpoints HTTP
+8.1. Gin Framework (Conversa)
+
+Por que Gin?
+Routing
+Middlewares
+
+8.2. Request/Response DTOs (Prática)
+
+Structs de request
+Structs de response
+Validação (validator)
+
+8.3. User Handler (Prática)
+
+POST /users (criar)
+POST /auth/login
+GET /users/:id
+
+8.4. Middlewares (Prática)
+
+Logger
+Recovery (panic handler)
+CORS
+Auth (JWT)
+
+
+ETAPA 9: AUTENTICAÇÃO JWT 🔐
+Objetivo: Segurança da API
+9.1. JWT Basics (Conversa)
+
+Como funciona?
+Claims
+Expiração
+
+9.2. Geração de Token (Prática)
+
+Criar token ao login
+Refresh token
+
+9.3. Validação de Token (Prática)
+
+Middleware de auth
+Extrair user do token
+
+
+ETAPA 10: MULTI-TENANT (Schema por Tenant) 🏢
+Objetivo: Isolamento de dados
+10.1. Multi-Tenant Strategies (Conversa)
+
+Schema separado vs shared schema
+Trade-offs
+
+10.2. Tenant Manager (Prática)
+
+Criar schema dinamicamente
+Switch de schema por request
+
+10.3. Tenant Middleware (Prática)
+
+Detectar tenant do request
+Injetar no contexto
+
+
+ETAPA 11: MÓDULO PATIENT 👥
+Objetivo: Primeiro módulo tenant-specific
+11.1. Patient Entity (Prática)
+
+Domain layer completo
+
+11.2. Patient Repository (Prática)
+
+CRUD em schema tenant
+
+11.3. Patient Use Cases (Prática)
+
+Create, List, Update
+
+11.4. Patient Handler (Prática)
+
+Endpoints REST
+
+
+ETAPA 12: MÓDULO APPOINTMENT 📅
+Objetivo: Agendamento de consultas
+12.1. Appointment Entity (Prática)
+12.2. Appointment Repository (Prática)
+12.3. Appointment Use Cases (Prática)
+12.4. Appointment Handler (Prática)
+
+ETAPA 13: TESTES E2E 🧪
+Objetivo: Testar fluxo completo
+13.1. Setup de Testes E2E (Prática)
+
+Banco de teste
+Fixtures
+
+13.2. Cenários de Teste (Prática)
+
+Criar user → Login → Criar patient → Agendar
+
+
+ETAPA 14: DEPLOY MVP 🚀
+Objetivo: Colocar no ar
+14.1. Dockerfile (Prática)
+14.2. CI/CD (GitHub Actions) (Prática)
+14.3. Deploy (Railway/Render) (Prática)

@@ -1,25 +1,28 @@
+# Configurações do Air para Hot-Reload
+
+# Diretório a ser monitorado para mudanças
 root = "."
-tmp_dir = "tmp"
+# Pasta temporária para o binário compilado
+tmp_dir = "tmp" 
 
 [build]
-# Comando para compilar
-cmd = "go build -o ./tmp/main ./cmd/server"
-# Arquivos e pastas a serem ignorados
-exclude_dir = ["assets", "tmp", "vendor", "tests", "docs", "db", "migrations"]
-# Arquivos a serem observados
+# O comando para construir a aplicação Go, gerando um binário temporário
+# Usamos 'main' para ser mais explícito
+cmd = "go build -o ./tmp/main ." 
+# Diretórios a serem excluídos do monitoramento.
+# Adicionamos mais exclusões para aumentar a performance.
+exclude_dir = ["vendor", "node_modules", "testdata", "tmp", "assets", "docs", "tests", "internal/infra/database/migrations"]
+# Extensões de arquivo a serem observadas (apenas se for Go e arquivos de template/config)
 include_ext = ["go", "tpl", "tmpl", "html", "yaml", "yml", "json"]
-# Pasta de saída
-bin = "tmp/main"
-# Tempo de espera antes de recompilar
-delay = 500 # ms
-# Variáveis de ambiente
-# env = []
-
-[log]
-# Cor do log (opcional)
-time_format = "2006/01/02 15:04:05"
-color = true
+# O Air irá sempre re-iniciar quando algo mudar
+stop_on_error = true
 
 [run]
-# Argumentos de execução (se houver)
-cmds = []
+# O binário a ser executado (usando o 'main' que definimos no build)
+cmd = "./tmp/main"
+# Pequeno delay para garantir que a construção termine antes de iniciar
+delay = 500 # Reduzimos para 500ms
+# Mata o processo existente antes de iniciar um novo
+send_interrupt = true 
+# O Air deve reiniciar o servidor? Sim, sempre que um arquivo mudar
+rerun = true

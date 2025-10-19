@@ -2,7 +2,7 @@ services:
   app:
     # O build será definido mais tarde com o Dockerfile da aplicação Go
     # Por enquanto, vamos focar no DB
-    container_name: ${APP_NAME}
+    container_name: ${APP_NAME}-app
     restart: always
     build:
       context: .
@@ -13,18 +13,25 @@ services:
       - .:/app
     depends_on:
       - db
+      - redis
+
     environment:
-      # Variáveis de ambiente da aplicação
+      # Variáveis de ambiente da Aplicação
+      APP_ENV: ${APP_ENV}
+      APP_PORT: ${APP_PORT}
+      # Variáveis de ambiente do Banco de Dados
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
-      APP_PORT: ${APP_PORT}
-      APP_ENV: ${APP_ENV}
+      DB_SSLMODE: disable
+      # Variáveis de ambiente do Redis
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
   db:
-    container_name: go_api_db
-    image: postgres:16-alpine
+    container_name: ${APP_NAME}-db
+    image: postgres:18-alpine
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -35,5 +42,15 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  redis:
+    container_name: ${APP_NAME}-redis
+    image: redis:8.2-alpine
+    restart: always
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redis_data:/data
+
 volumes:
   postgres_data:
+  redis_data:
