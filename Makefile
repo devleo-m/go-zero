@@ -183,15 +183,46 @@ shell-redis: ## Abre shell do Redis
 	@echo "$(GREEN)🔴 Abrindo shell do Redis...$(NC)"
 	docker exec -it $(APP_NAME)-redis redis-cli
 
+# ===========================================
+# COMANDOS DE MIGRATIONS
+# ===========================================
+
 .PHONY: migrate-up
-migrate-up: ## Executa migrations (quando implementado)
-	@echo "$(YELLOW)⚠️  Migrations ainda não implementadas$(NC)"
-	@echo "$(YELLOW)💡 Será implementado na ETAPA 4$(NC)"
+migrate-up: ## Aplica todas as migrations
+	@echo "$(GREEN)🚀 Aplicando migrations...$(NC)"
+	$(GO) run cmd/migrate/main.go -direction=up
+	@echo "$(GREEN)✅ Migrations aplicadas!$(NC)"
 
 .PHONY: migrate-down
-migrate-down: ## Reverte migrations (quando implementado)
-	@echo "$(YELLOW)⚠️  Migrations ainda não implementadas$(NC)"
-	@echo "$(YELLOW)💡 Será implementado na ETAPA 4$(NC)"
+migrate-down: ## Reverte última migration
+	@echo "$(YELLOW)🔄 Revertendo última migration...$(NC)"
+	$(GO) run cmd/migrate/main.go -direction=down -steps=1
+	@echo "$(GREEN)✅ Migration revertida!$(NC)"
+
+.PHONY: migrate-down-all
+migrate-down-all: ## Reverte todas as migrations
+	@echo "$(RED)⚠️  Revertendo TODAS as migrations...$(NC)"
+	$(GO) run cmd/migrate/main.go -direction=down
+	@echo "$(GREEN)✅ Todas as migrations revertidas!$(NC)"
+
+.PHONY: migrate-force
+migrate-force: ## Força versão específica (uso: make migrate-force version=1)
+	@echo "$(YELLOW)🔧 Forçando versão da migration...$(NC)"
+	$(GO) run cmd/migrate/main.go -direction=force -steps=$(version)
+	@echo "$(GREEN)✅ Versão forçada!$(NC)"
+
+.PHONY: migrate-version
+migrate-version: ## Mostra versão atual das migrations
+	@echo "$(GREEN)📊 Verificando versão das migrations...$(NC)"
+	$(GO) run cmd/migrate/main.go -direction=up -steps=0
+	@echo "$(GREEN)✅ Verificação concluída!$(NC)"
+
+.PHONY: migrate-create
+migrate-create: ## Cria nova migration (uso: make migrate-create name=add_phone_to_users)
+	@echo "$(GREEN)📝 Criando nova migration...$(NC)"
+	@cd internal/infra/database/migrations && migrate create -ext sql -dir . -seq $(name)
+	@echo "$(GREEN)✅ Migration criada!$(NC)"
+	@echo "$(YELLOW)💡 Edite os arquivos .up.sql e .down.sql$(NC)"
 
 # ===========================================
 # COMANDO PADRÃO
