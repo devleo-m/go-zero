@@ -1395,65 +1395,19 @@ Refresh token
 Middleware de auth
 Extrair user do token
 
-
-ETAPA 10: MULTI-TENANT (Schema por Tenant) 🏢
-Objetivo: Isolamento de dados
-10.1. Multi-Tenant Strategies (Conversa)
-
-Schema separado vs shared schema
-Trade-offs
-
-10.2. Tenant Manager (Prática)
-
-Criar schema dinamicamente
-Switch de schema por request
-
-10.3. Tenant Middleware (Prática)
-
-Detectar tenant do request
-Injetar no contexto
-
-
-ETAPA 11: MÓDULO PATIENT 👥
-Objetivo: Primeiro módulo tenant-specific
-11.1. Patient Entity (Prática)
-
-Domain layer completo
-
-11.2. Patient Repository (Prática)
-
-CRUD em schema tenant
-
-11.3. Patient Use Cases (Prática)
-
-Create, List, Update
-
-11.4. Patient Handler (Prática)
-
-Endpoints REST
-
-
-ETAPA 12: MÓDULO APPOINTMENT 📅
-Objetivo: Agendamento de consultas
-12.1. Appointment Entity (Prática)
-12.2. Appointment Repository (Prática)
-12.3. Appointment Use Cases (Prática)
-12.4. Appointment Handler (Prática)
-
-ETAPA 13: TESTES E2E 🧪
+ETAPA 10: TESTES E2E 🧪
 Objetivo: Testar fluxo completo
-13.1. Setup de Testes E2E (Prática)
+10.1. Setup de Testes E2E (Prática)
 
 Banco de teste
 Fixtures
 
-13.2. Cenários de Teste (Prática)
+10.2. Cenários de Teste (Prática)
 
 Criar user → Login → Criar patient → Agendar
 
-
-ETAPA 14: DEPLOY MVP 🚀
+ETAPA 11: DEPLOY MVP 🚀
 Objetivo: Colocar no ar
-14.1. Dockerfile (Prática)
-14.2. CI/CD (GitHub Actions) (Prática)
-14.3. Deploy (Railway/Render) (Prática)
+11.1. Dockerfile (Prática)
+11.2. CI/CD (GitHub Actions) (Prática)
+11.3. Deploy (Railway/Render) (Prática)
