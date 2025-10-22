@@ -33,6 +33,7 @@ var (
 	// Erros de usuário
 	ErrUserNotFound      = NewDomainError("USER_NOT_FOUND", "usuário não encontrado", nil)
 	ErrUserAlreadyExists = NewDomainError("USER_ALREADY_EXISTS", "usuário já existe", nil)
+	ErrEmailAlreadyInUse = NewDomainError("EMAIL_ALREADY_IN_USE", "email já está em uso", nil)
 	ErrUserInactive      = NewDomainError("USER_INACTIVE", "usuário inativo", nil)
 	ErrUserNotVerified   = NewDomainError("USER_NOT_VERIFIED", "usuário não verificado", nil)
 

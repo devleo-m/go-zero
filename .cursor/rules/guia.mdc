@@ -1411,3 +1411,761 @@ Objetivo: Colocar no ar
 11.1. Dockerfile (Prática)
 11.2. CI/CD (GitHub Actions) (Prática)
 11.3. Deploy (Railway/Render) (Prática)
+
+----------GUIA: COMO PROJETO DEVE FICAR, EXEMPLO:-----------
+
+📁 ESTRUTURA COMPLETA DE PROJETO GO - NÍVEL EMPRESARIAL
+🎯 Visão Geral
+Este é um projeto Clinic Management System completo com:
+
+Multi-tenant (cada clínica isolada)
+Gestão de usuários e roles
+Profissionais de saúde
+Pacientes
+Planos de saúde
+Agendamentos
+Arquitetura Hexagonal + DDD
+📂 ESTRUTURA COMPLETA DO PROJETO
+clinic-management/
+│
+├── cmd/                                    # Pontos de entrada da aplicação
+│   ├── api/                                # API REST
+│   │   └── main.go                         # main.go da API
+│   ├── worker/                             # Workers/Jobs assíncronos
+│   │   └── main.go                         # main.go do worker
+│   └── migrate/                            # CLI de migrations
+│       └── main.go                         # main.go das migrations
+│
+├── internal/                               # Código privado da aplicação
+│   │
+│   ├── domain/                             # ⭐ CAMADA DE DOMÍNIO (CORE)
+│   │   │
+│   │   ├── shared/                         # Compartilhado entre módulos
+│   │   │   ├── base_entity.go              # ID, timestamps, soft delete
+│   │   │   ├── value_objects.go            # VOs compartilhados (Money, Address)
+│   │   │   ├── errors.go                   # Erros base do domínio
+│   │   │   └── interfaces.go               # Interfaces compartilhadas
+│   │   │
+│   │   ├── user/                           # Módulo: User
+│   │   │   ├── entity.go                   # User entity
+│   │   │   ├── value_objects.go            # Email, Phone, Password
+│   │   │   ├── repository.go               # Interface do repository
+│   │   │   ├── errors.go                   # Erros específicos de user
+│   │   │   └── types.go                    # Enums (Role)
+│   │   │
+│   │   ├── tenant/                         # Módulo: Tenant (Clínica)
+│   │   │   ├── entity.go                   # Tenant entity
+│   │   │   ├── value_objects.go            # CNPJ, TradeName
+│   │   │   ├── repository.go               # Interface
+│   │   │   ├── errors.go                   # Erros de tenant
+│   │   │   └── types.go                    # Status, PlanType
+│   │   │
+│   │   ├── professional/                   # Módulo: Professional (Médico, etc)
+│   │   │   ├── entity.go                   # Professional entity
+│   │   │   ├── value_objects.go            # CRM, Specialty
+│   │   │   ├── repository.go               # Interface
+│   │   │   ├── errors.go                   # Erros
+│   │   │   └── types.go                    # ProfessionalType
+│   │   │
+│   │   ├── patient/                        # Módulo: Patient
+│   │   │   ├── entity.go                   # Patient entity
+│   │   │   ├── value_objects.go            # CPF, BloodType
+│   │   │   ├── repository.go               # Interface
+│   │   │   ├── errors.go                   # Erros
+│   │   │   └── types.go                    # Gender, MaritalStatus
+│   │   │
+│   │   ├── plan/                           # Módulo: HealthPlan
+│   │   │   ├── entity.go                   # Plan entity
+│   │   │   ├── value_objects.go            # PlanNumber
+│   │   │   ├── repository.go               # Interface
+│   │   │   ├── errors.go                   # Erros
+│   │   │   └── types.go                    # PlanCategory
+│   │   │
+│   │   └── appointment/                    # Módulo: Appointment
+│   │       ├── entity.go                   # Appointment entity
+│   │       ├── value_objects.go            # TimeSlot
+│   │       ├── repository.go               # Interface
+│   │       ├── errors.go                   # Erros
+│   │       └── types.go                    # AppointmentStatus
+│   │
+│   ├── usecase/                            # ⭐ CAMADA DE APLICAÇÃO
+│   │   │
+│   │   ├── user/                           # Use Cases de User
+│   │   │   ├── create_user.go              # Criar usuário
+│   │   │   ├── authenticate_user.go        # Login
+│   │   │   ├── get_user.go                 # Buscar usuário
+│   │   │   ├── list_users.go               # Listar usuários
+│   │   │   ├── update_user.go              # Atualizar usuário
+│   │   │   ├── delete_user.go              # Deletar usuário
+│   │   │   ├── change_password.go          # Trocar senha
+│   │   │   ├── reset_password.go           # Reset senha
+│   │   │   └── dtos.go                     # DTOs (Input/Output)
+│   │   │
+│   │   ├── tenant/                         # Use Cases de Tenant
+│   │   │   ├── create_tenant.go            # Criar clínica
+│   │   │   ├── get_tenant.go               # Buscar clínica
+│   │   │   ├── list_tenants.go             # Listar clínicas
+│   │   │   ├── update_tenant.go            # Atualizar clínica
+│   │   │   ├── activate_tenant.go          # Ativar clínica
+│   │   │   ├── deactivate_tenant.go        # Desativar clínica
+│   │   │   └── dtos.go                     # DTOs
+│   │   │
+│   │   ├── professional/                   # Use Cases de Professional
+│   │   │   ├── create_professional.go      # Criar profissional
+│   │   │   ├── get_professional.go         # Buscar profissional
+│   │   │   ├── list_professionals.go       # Listar profissionais
+│   │   │   ├── update_professional.go      # Atualizar profissional
+│   │   │   ├── delete_professional.go      # Deletar profissional
+│   │   │   └── dtos.go                     # DTOs
+│   │   │
+│   │   ├── patient/                        # Use Cases de Patient
+│   │   │   ├── create_patient.go           # Criar paciente
+│   │   │   ├── get_patient.go              # Buscar paciente
+│   │   │   ├── list_patients.go            # Listar pacientes
+│   │   │   ├── update_patient.go           # Atualizar paciente
+│   │   │   ├── delete_patient.go           # Deletar paciente
+│   │   │   └── dtos.go                     # DTOs
+│   │   │
+│   │   ├── plan/                           # Use Cases de Plan
+│   │   │   ├── create_plan.go              # Criar plano
+│   │   │   ├── get_plan.go                 # Buscar plano
+│   │   │   ├── list_plans.go               # Listar planos
+│   │   │   ├── update_plan.go              # Atualizar plano
+│   │   │   └── dtos.go                     # DTOs
+│   │   │
+│   │   └── appointment/                    # Use Cases de Appointment
+│   │       ├── create_appointment.go       # Criar agendamento
+│   │       ├── get_appointment.go          # Buscar agendamento
+│   │       ├── list_appointments.go        # Listar agendamentos
+│   │       ├── update_appointment.go       # Atualizar agendamento
+│   │       ├── cancel_appointment.go       # Cancelar agendamento
+│   │       ├── confirm_appointment.go      # Confirmar agendamento
+│   │       ├── check_availability.go       # Verificar disponibilidade
+│   │       └── dtos.go                     # DTOs
+│   │
+│   ├── infrastructure/                     # ⭐ CAMADA DE INFRAESTRUTURA
+│   │   │
+│   │   ├── persistence/                    # Persistência de dados
+│   │   │   │
+│   │   │   └── postgres/                   # PostgreSQL
+│   │   │       │
+│   │   │       ├── user/                   # Repository de User
+│   │   │       │   ├── model.go            # GORM Model
+│   │   │       │   ├── converter.go        # Domain ↔ Model
+│   │   │       │   ├── repository.go       # Implementação
+│   │   │       │   └── queries.go          # Query builders
+│   │   │       │
+│   │   │       ├── tenant/                 # Repository de Tenant
+│   │   │       │   ├── model.go
+│   │   │       │   ├── converter.go
+│   │   │       │   ├── repository.go
+│   │   │       │   └── queries.go
+│   │   │       │
+│   │   │       ├── professional/           # Repository de Professional
+│   │   │       │   ├── model.go
+│   │   │       │   ├── converter.go
+│   │   │       │   ├── repository.go
+│   │   │       │   └── queries.go
+│   │   │       │
+│   │   │       ├── patient/                # Repository de Patient
+│   │   │       │   ├── model.go
+│   │   │       │   ├── converter.go
+│   │   │       │   ├── repository.go
+│   │   │       │   └── queries.go
+│   │   │       │
+│   │   │       ├── plan/                   # Repository de Plan
+│   │   │       │   ├── model.go
+│   │   │       │   ├── converter.go
+│   │   │       │   ├── repository.go
+│   │   │       │   └── queries.go
+│   │   │       │
+│   │   │       └── appointment/            # Repository de Appointment
+│   │   │           ├── model.go
+│   │   │           ├── converter.go
+│   │   │           ├── repository.go
+│   │   │           └── queries.go
+│   │   │
+│   │   ├── cache/                          # Cache (Redis)
+│   │   │   ├── redis_client.go             # Cliente Redis
+│   │   │   └── cache_repository.go         # Repository de cache
+│   │   │
+│   │   ├── auth/                           # Autenticação
+│   │   │   ├── jwt_service.go              # Serviço JWT
+│   │   │   ├── claims.go                   # Claims customizados
+│   │   │   └── password_hasher.go          # Hash de senhas
+│   │   │
+│   │   ├── email/                          # Serviço de Email
+│   │   │   ├── email_service.go            # Interface
+│   │   │   ├── smtp_service.go             # Implementação SMTP
+│   │   │   └── templates/                  # Templates HTML
+│   │   │       ├── welcome.html
+│   │   │       ├── reset_password.html
+│   │   │       └── appointment_reminder.html
+│   │   │
+│   │   ├── sms/                            # Serviço de SMS
+│   │   │   ├── sms_service.go              # Interface
+│   │   │   └── twilio_service.go           # Implementação Twilio
+│   │   │
+│   │   └── logger/                         # Logger
+│   │       ├── logger.go                   # Interface
+│   │       └── zap_logger.go               # Implementação Zap
+│   │
+│   ├── interface/                          # ⭐ CAMADA DE INTERFACE (Apresentação)
+│   │   │
+│   │   └── http/                           # Interface HTTP
+│   │       │
+│   │       ├── handler/                    # Handlers (Controllers)
+│   │       │   ├── user_handler.go         # Handler de User
+│   │       │   ├── tenant_handler.go       # Handler de Tenant
+│   │       │   ├── professional_handler.go # Handler de Professional
+│   │       │   ├── patient_handler.go      # Handler de Patient
+│   │       │   ├── plan_handler.go         # Handler de Plan
+│   │       │   ├── appointment_handler.go  # Handler de Appointment
+│   │       │   └── health_handler.go       # Health check
+│   │       │
+│   │       ├── middleware/                 # Middlewares
+│   │       │   ├── auth.go                 # Autenticação JWT
+│   │       │   ├── authorization.go        # Autorização (roles)
+│   │       │   ├── tenant.go               # Multi-tenant
+│   │       │   ├── cors.go                 # CORS
+│   │       │   ├── logger.go               # Logger
+│   │       │   ├── rate_limit.go           # Rate limiting
+│   │       │   ├── recovery.go             # Panic recovery
+│   │       │   └── request_id.go           # Request ID tracking
+│   │       │
+│   │       ├── dto/                        # DTOs HTTP
+│   │       │   ├── user_dto.go             # DTOs de User
+│   │       │   ├── tenant_dto.go           # DTOs de Tenant
+│   │       │   ├── professional_dto.go     # DTOs de Professional
+│   │       │   ├── patient_dto.go          # DTOs de Patient
+│   │       │   ├── plan_dto.go             # DTOs de Plan
+│   │       │   ├── appointment_dto.go      # DTOs de Appointment
+│   │       │   ├── error_dto.go            # DTOs de erro
+│   │       │   └── pagination_dto.go       # DTOs de paginação
+│   │       │
+│   │       └── router/                     # Configuração de rotas
+│   │           ├── router.go               # Router principal
+│   │           ├── routes_v1.go            # Rotas v1
+│   │           └── routes_public.go        # Rotas públicas
+│   │
+│   └── config/                             # ⭐ CONFIGURAÇÕES
+│       ├── config.go                       # Struct de configuração
+│       ├── database.go                     # Config de banco
+│       ├── redis.go                        # Config de Redis
+│       ├── jwt.go                          # Config de JWT
+│       └── validator.go                    # Validadores customizados
+│
+├── pkg/                                    # Código público reutilizável
+│   ├── validator/                          # Validadores
+│   │   ├── cpf.go                          # Validar CPF
+│   │   ├── cnpj.go                         # Validar CNPJ
+│   │   └── phone.go                        # Validar telefone
+│   │
+│   ├── utils/                              # Utilitários
+│   │   ├── string.go                       # Funções de string
+│   │   ├── time.go                         # Funções de tempo
+│   │   └── crypto.go                       # Funções de criptografia
+│   │
+│   └── errors/                             # Tratamento de erros
+│       ├── app_error.go                    # Erro da aplicação
+│       └── error_handler.go                # Handler de erros
+│
+├── migrations/                             # Migrations do banco
+│   ├── 000001_create_users_table.up.sql
+│   ├── 000001_create_users_table.down.sql
+│   ├── 000002_create_tenants_table.up.sql
+│   ├── 000002_create_tenants_table.down.sql
+│   ├── 000003_create_professionals_table.up.sql
+│   ├── 000003_create_professionals_table.down.sql
+│   ├── 000004_create_patients_table.up.sql
+│   ├── 000004_create_patients_table.down.sql
+│   ├── 000005_create_plans_table.up.sql
+│   ├── 000005_create_plans_table.down.sql
+│   ├── 000006_create_appointments_table.up.sql
+│   └── 000006_create_appointments_table.down.sql
+│
+├── tests/                                  # Testes
+│   ├── unit/                               # Testes unitários
+│   │   ├── domain/                         # Testes de domain
+│   │   └── usecase/                        # Testes de use case
+│   │
+│   ├── integration/                        # Testes de integração
+│   │   └── repository/                     # Testes de repository
+│   │
+│   └── e2e/                                # Testes end-to-end
+│       └── api/                            # Testes de API
+│
+├── docs/                                   # Documentação
+│   ├── swagger.yaml                        # Swagger/OpenAPI spec
+│   ├── architecture.md                     # Documentação da arquitetura
+│   ├── api.md                              # Documentação da API
+│   └── diagrams/                           # Diagramas
+│       ├── architecture.png
+│       ├── database_schema.png
+│       └── flow_diagrams.png
+│
+├── scripts/                                # Scripts úteis
+│   ├── seed.go                             # Seed do banco
+│   ├── generate_jwt_secret.sh             # Gerar secret JWT
+│   └── docker-entrypoint.sh               # Entrypoint Docker
+│
+├── .github/                                # GitHub Actions
+│   └── workflows/
+│       ├── ci.yml                          # CI
+│       ├── cd.yml                          # CD
+│       └── tests.yml                       # Testes automáticos
+│
+├── docker/                                 # Docker files
+│   ├── Dockerfile                          # Dockerfile da app
+│   ├── Dockerfile.dev                      # Dockerfile dev
+│   └── nginx.conf                          # Config Nginx (se usar)
+│
+├── .env.example                            # Exemplo de .env
+├── .env                                    # Variáveis de ambiente (gitignored)
+├── .gitignore                              # Git ignore
+├── .air.toml                               # Config do Air (hot reload)
+├── docker-compose.yml                      # Docker Compose
+├── docker-compose.dev.yml                  # Docker Compose dev
+├── go.mod                                  # Dependências Go
+├── go.sum                                  # Checksums
+├── Makefile                                # Comandos Make
+└── README.md                               # Documentação principal
+🎯 EXPLICAÇÃO DETALHADA DE CADA CAMADA
+1️⃣ cmd/ - Pontos de Entrada
+O que é:
+
+Executáveis da aplicação
+Cada pasta = um binário diferente
+O que vai aqui:
+
+cmd/api/main.go → Servidor HTTP
+cmd/worker/main.go → Jobs assíncronos (enviar emails, notificações)
+cmd/migrate/main.go → CLI para rodar migrations
+Exemplo cmd/api/main.go:
+
+go
+package main
+
+import (
+    "log"
+    "github.com/joho/godotenv"
+    "your-project/internal/config"
+    "your-project/internal/interface/http/router"
+)
+
+func main() {
+    // 1. Carregar .env
+    godotenv.Load()
+    
+    // 2. Carregar configurações
+    cfg := config.LoadConfig()
+    
+    // 3. Setup dependências (DB, Redis, etc)
+    db := setupDatabase(cfg)
+    redis := setupRedis(cfg)
+    logger := setupLogger(cfg)
+    
+    // 4. Setup repositories
+    repos := setupRepositories(db)
+    
+    // 5. Setup services
+    services := setupServices(cfg, redis, logger)
+    
+    // 6. Setup use cases
+    useCases := setupUseCases(repos, services, logger)
+    
+    // 7. Setup handlers
+    handlers := setupHandlers(useCases, logger)
+    
+    // 8. Setup router
+    r := router.NewRouter(handlers, services.JWT, logger)
+    engine := r.Setup()
+    
+    // 9. Rodar servidor
+    log.Printf("Server running on %s", cfg.Server.Port)
+    if err := engine.Run(cfg.Server.Port); err != nil {
+        log.Fatal(err)
+    }
+}
+2️⃣ internal/domain/ - Camada de Domínio (CORE)
+O que é:
+
+Coração da aplicação
+Regras de negócio PURAS
+ZERO dependências externas
+Estrutura de cada módulo:
+
+domain/user/
+├── entity.go          # User entity com métodos de negócio
+├── value_objects.go   # Email, Phone, Password (VOs)
+├── repository.go      # Interface (contrato)
+├── errors.go          # Erros específicos (ErrUserNotFound)
+└── types.go           # Enums (Role, Status)
+O que vai em cada arquivo:
+
+entity.go:
+
+go
+type User struct {
+    shared.BaseEntity
+    Name     string
+    Email    Email     // Value Object
+    Password Password  // Value Object
+    Role     Role      // Enum
+}
+
+// Métodos de negócio
+func (u *User) Authenticate(password string) error
+func (u *User) ChangePassword(old, new string) error
+func (u *User) Deactivate()
+value_objects.go:
+
+go
+type Email struct {
+    value string
+}
+
+func NewEmail(value string) (Email, error) {
+    // Validação
+}
+repository.go:
+
+go
+type Repository interface {
+    Create(ctx context.Context, user *User) error
+    FindByID(ctx context.Context, id uuid.UUID) (*User, error)
+    // ... outros métodos
+}
+3️⃣ internal/usecase/ - Camada de Aplicação
+O que é:
+
+Orquestração de lógica
+Chama Domain + Repositories + Services
+Coordena fluxo da aplicação
+Estrutura de cada módulo:
+
+usecase/user/
+├── create_user.go      # Use Case: Criar usuário
+├── authenticate_user.go # Use Case: Login
+├── get_user.go         # Use Case: Buscar usuário
+└── dtos.go             # Input/Output DTOs
+O que vai aqui:
+
+go
+// create_user.go
+type CreateUserUseCase struct {
+    userRepo     domain.UserRepository
+    emailService EmailService
+    logger       Logger
+}
+
+func (uc *CreateUserUseCase) Execute(
+    ctx context.Context,
+    input CreateUserInput,
+) (*CreateUserOutput, error) {
+    // 1. Validar input
+    // 2. Verificar se email existe
+    // 3. Criar entidade de domain
+    // 4. Salvar no banco
+    // 5. Enviar email de boas-vindas
+    // 6. Retornar output
+}
+4️⃣ internal/infrastructure/ - Camada de Infraestrutura
+O que é:
+
+Implementações concretas
+Acesso a tecnologias externas
+GORM, Redis, SMTP, etc.
+Sub-camadas:
+
+persistence/postgres/: Repositories GORM
+
+postgres/user/
+├── model.go       # GORM Model (tags, hooks)
+├── converter.go   # Domain ↔ Model
+├── repository.go  # Implementação da interface
+└── queries.go     # Query builders
+auth/: Autenticação
+
+auth/
+├── jwt_service.go     # Gerar/validar JWT
+└── password_hasher.go # Bcrypt
+email/: Serviço de email
+
+email/
+├── email_service.go # Interface
+├── smtp_service.go  # Implementação
+└── templates/       # Templates HTML
+5️⃣ internal/interface/http/ - Camada de Apresentação
+O que é:
+
+Ponto de entrada HTTP
+Handlers, Middlewares, DTOs
+Converte HTTP → Use Case
+Estrutura:
+
+http/
+├── handler/       # Controllers
+├── middleware/    # Interceptadores
+├── dto/           # Request/Response
+└── router/        # Configuração de rotas
+handler/user_handler.go:
+
+go
+type UserHandler struct {
+    createUserUC *usecase.CreateUserUseCase
+    authUserUC   *usecase.AuthenticateUserUseCase
+    // ... outros use cases
+}
+
+func (h *UserHandler) CreateUser(c *gin.Context) {
+    // 1. Bind request
+    // 2. Converter para Use Case Input
+    // 3. Executar Use Case
+    // 4. Converter Output para Response
+    // 5. Retornar JSON
+}
+6️⃣ internal/config/ - Configurações
+O que é:
+
+Carregamento de configs
+Validação de env vars
+Structs de configuração
+config.go:
+
+go
+type Config struct {
+    Server   ServerConfig
+    Database DatabaseConfig
+    Redis    RedisConfig
+    JWT      JWTConfig
+}
+
+func LoadConfig() *Config {
+    return &Config{
+        Server: ServerConfig{
+            Port: os.Getenv("PORT"),
+        },
+        Database: DatabaseConfig{
+            Host: os.Getenv("DB_HOST"),
+            // ...
+        },
+    }
+}
+7️⃣ pkg/ - Código Público Reutilizável
+O que é:
+
+Funções utilitárias
+Pode ser usado por outros projetos
+Validadores, helpers, etc.
+pkg/validator/cpf.go:
+
+go
+package validator
+
+func IsValidCPF(cpf string) bool {
+    // Lógica de validação
+}
+8️⃣ migrations/ - Migrations do Banco
+O que é:
+
+Versionamento do schema
+Arquivos SQL up/down
+Exemplo:
+
+sql
+-- 000001_create_users_table.up.sql
+CREATE TABLE users (
+    id UUID PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    -- ...
+);
+
+-- 000001_create_users_table.down.sql
+DROP TABLE users;
+9️⃣ tests/ - Testes
+O que é:
+
+Testes em 3 níveis
+unit/: Domain e Use Cases (sem infra) integration/: Repositories (com banco de teste) e2e/: API completa (tudo junto)
+
+🔟 Arquivos na Raiz
+.env.example:
+
+env
+# Server
+PORT=:8080
+
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=clinic_db
+
+# JWT
+JWT_SECRET_KEY=your-secret-key-min-32-chars
+JWT_ISSUER=clinic-app
+
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+Makefile:
+
+makefile
+.PHONY: run migrate-up test
+
+run:
+	air
+
+migrate-up:
+	migrate -path migrations -database "postgres://..." up
+
+test:
+	go test ./...
+
+docker-up:
+	docker-compose up -d
+
+🔄 FLUXO DE DADOS COMPLETO
+HTTP Request
+    ↓
+Router (routes_v1.go)
+    ↓
+Middlewares (auth, tenant, logger)
+    ↓
+Handler (user_handler.go)
+    ↓ bind request
+Request DTO
+    ↓ convert to
+Use Case Input
+    ↓
+Use Case (create_user.go)
+    ↓ orchestrate
+Domain Entity + Repository + Services
+    ↓
+Repository Implementation (postgres/user/repository.go)
+    ↓ convert to
+GORM Model
+    ↓
+PostgreSQL Database
+    ↓
+GORM Model
+    ↓ convert to
+Domain Entity
+    ↓
+Use Case Output
+    ↓ convert to
+Response DTO
+    ↓
+JSON Response
+
+💡 REGRAS DE OURO
+✅ FAÇA:
+Domain NUNCA importa nada de fora (nem GORM, nem Gin)
+Use Cases só conhecem Domain (interfaces)
+Infrastructure implementa interfaces do Domain
+Handlers só chamam Use Cases
+Cada módulo é independente (user não importa patient)
+DTOs diferentes: Use Case DTOs ≠ HTTP DTOs
+Value Objects para conceitos importantes
+Um arquivo = Uma responsabilidade
+❌ NÃO FAÇA:
+Domain importar GORM, Gin, etc.
+Handler acessar Repository direto
+Use Case retornar gin.Context
+Misturar lógica de negócio no Handler
+Expor entidades de Domain na API
+Usar strings para conceitos (use VOs e Enums)
+Arquivo gigante com tudo misturado
+📊 DEPENDÊNCIAS ENTRE CAMADAS
+┌──────────────────────────────────────────────────┐
+│ INTERFACE (HTTP)                                 │
+│ - Handlers                                       │
+│ - Middlewares                                    │
+│ - DTOs HTTP                                      │
+└──────────────────┬───────────────────────────────┘
+                   │ depende de ↓
+┌──────────────────▼───────────────────────────────┐
+│ USE CASE (Aplicação)                             │
+│ - Orquestração                                   │
+│ - DTOs Use Case                                  │
+└──────────────────┬───────────────────────────────┘
+                   │ depende de ↓
+┌──────────────────▼───────────────────────────────┐
+│ DOMAIN (Core)                                    │
+│ - Entities                                       │
+│ - Value Objects                                  │
+│ - Interfaces (Repository)                        │
+└──────────────────▲───────────────────────────────┘
+                   │ implementado por ↑
+┌──────────────────┴───────────────────────────────┐
+│ INFRASTRUCTURE (Implementação)                   │
+│ - GORM Repositories                              │
+│ - JWT Service                                    │
+│ - Email Service                                  │
+└──────────────────────────────────────────────────┘
+
+🎯 CHECKLIST DE ORGANIZAÇÃO
+✅ Domain Layer
+ Cada módulo em pasta separada
+ Entity com métodos de negócio
+ Value Objects para conceitos importantes
+ Interface de Repository
+ Erros customizados
+ Zero dependências externas
+✅ Use Case Layer
+ Um arquivo por Use Case
+ Input/Output DTOs claros
+ Validação de input
+ Orquestração clara (1-2-3-4)
+ Logs de operações importantes
+ Tratamento de erros
+✅ Infrastructure Layer
+ Repository implementation separada
+ GORM Model com tags corretas
+ Converter bidirecional
+ Services (JWT, Email, SMS)
+ Tratamento de erros de infra
+✅ Interface Layer
+ Handler por módulo
+ Middlewares organizados
+ DTOs HTTP separados dos DTOs de Use Case
+ Router configurado
+ Validação de entrada
+✅ Config
+ Struct de configuração
+ .env.example documentado
+ Validação de configs obrigatórias
+✅ Testes
+ Unit tests (domain + use case)
+ Integration tests (repositories)
+ E2E tests (API completa)
+✅ Documentação
+ README.md completo
+ Swagger/OpenAPI
+ Diagramas de arquitetura
+ Guia de contribuição
+
+🎉 RESUMO FINAL
+Estrutura em Palavras:
+cmd/           → "Como rodar" (main.go)
+internal/      → "Código privado"
+  ├─ domain/   → "O QUE o sistema faz" (regras)
+  ├─ usecase/  → "QUANDO fazer" (orquestração)
+  ├─ infra/    → "COMO fazer" (GORM, JWT, Email)
+  └─ interface/→ "ENTRADA/SAÍDA" (HTTP, CLI)
+pkg/           → "Código reutilizável"
+migrations/    → "Histórico do banco"
+tests/         → "Garantia de qualidade"
+Fluxo Completo:
+HTTP → Handler → Use Case → Domain + Repo → DB
+                    ↓
+                Services (JWT, Email, etc)
+Regra de Ouro:
+Dependências sempre apontam PARA DENTRO (Domain no centro)
+
+Interface → Use Case → Domain ← Infrastructure
+    ↓          ↓          ↑            ↑
+  (usa)    (orquestra) (core)   (implementa)
