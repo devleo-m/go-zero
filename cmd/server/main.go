@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/devleo-m/go-zero/internal/infra/config"
-	"github.com/devleo-m/go-zero/internal/infra/database"
-	"github.com/devleo-m/go-zero/internal/infra/logger"
+	"github.com/devleo-m/go-zero/internal/infrastructure/config"
+	"github.com/devleo-m/go-zero/internal/infrastructure/database"
+	"github.com/devleo-m/go-zero/internal/infrastructure/logger"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )

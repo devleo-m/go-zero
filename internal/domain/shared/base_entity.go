@@ -13,6 +13,9 @@ type BaseEntity struct {
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
 	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+
+	// Domain Events (não exportado para não aparecer no JSON)
+	events []DomainEvent
 }
 
 // NewBaseEntity cria uma nova BaseEntity com ID único e timestamps
@@ -48,4 +51,28 @@ func (e *BaseEntity) IsDeleted() bool {
 func (e *BaseEntity) Restore() {
 	e.DeletedAt = nil
 	e.Touch()
+}
+
+// ==========================================
+// DOMAIN EVENTS
+// ==========================================
+
+// AddDomainEvent adiciona um evento de domínio
+func (e *BaseEntity) AddDomainEvent(event DomainEvent) {
+	e.events = append(e.events, event)
+}
+
+// GetDomainEvents retorna os eventos de domínio
+func (e *BaseEntity) GetDomainEvents() []DomainEvent {
+	return e.events
+}
+
+// ClearDomainEvents limpa os eventos de domínio
+func (e *BaseEntity) ClearDomainEvents() {
+	e.events = []DomainEvent{}
+}
+
+// HasDomainEvents verifica se tem eventos
+func (e *BaseEntity) HasDomainEvents() bool {
+	return len(e.events) > 0
 }
