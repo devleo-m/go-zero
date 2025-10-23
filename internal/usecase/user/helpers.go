@@ -129,9 +129,7 @@ func (h *UserQueryHelper) FindUsersByRole(ctx context.Context, role string, limi
 
 	// Converter para slice de ponteiros
 	result := make([]*user.User, len(users))
-	for i, u := range users {
-		result[i] = u
-	}
+	copy(result, users)
 
 	return result, nil
 }
@@ -157,9 +155,7 @@ func (h *UserQueryHelper) FindUsersByStatus(ctx context.Context, status string, 
 
 	// Converter para slice de ponteiros
 	result := make([]*user.User, len(users))
-	for i, u := range users {
-		result[i] = u
-	}
+	copy(result, users)
 
 	return result, nil
 }
@@ -192,9 +188,7 @@ func (h *UserQueryHelper) SearchUsers(ctx context.Context, searchTerm string, li
 
 	// Converter para slice de ponteiros
 	result := make([]*user.User, len(users))
-	for i, u := range users {
-		result[i] = u
-	}
+	copy(result, users)
 
 	return result, nil
 }
