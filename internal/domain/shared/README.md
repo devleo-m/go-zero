@@ -464,9 +464,81 @@ type Repository[T any] interface {
 }
 ```
 
+## 4. Query Builder Helpers - Facilita MUITO o uso! 🛠️
+
+```go
+// Antes (manual):
+filter := QueryFilter{
+    Where: []Condition{
+        {Field: "status", Operator: OpEqual, Value: "active"},
+        {Field: "role", Operator: OpIn, Value: []string{"admin", "user"}},
+    },
+    OrderBy: []OrderBy{
+        {Field: "created_at", Order: SortDesc},
+    },
+    Page: 1,
+    PageSize: 20,
+}
+
+// Agora (QueryBuilder):
+filter := NewQueryBuilder().
+    WhereEqual("status", "active").
+    WhereIn("role", []interface{}{"admin", "user"}).
+    OrderByDesc("created_at").
+    Page(1).
+    PageSize(20).
+    Build()
+```
+
+**Métodos disponíveis:**
+- `WhereEqual()`, `WhereNotEqual()`, `WhereIn()`, `WhereLike()`
+- `WhereNull()`, `WhereNotNull()`, `WhereBetween()`
+- `OrderByAsc()`, `OrderByDesc()`
+- `Page()`, `PageSize()`, `Include()`, `Select()`
+- `Active()`, `Inactive()`, `CreatedToday()`, `CreatedThisWeek()`
+
+## 5. Specification Pattern - Reutilização de regras! 🎯
+
+```go
+// Especificações reutilizáveis
+activeUsers := ActiveSpecification[User]()
+adminUsers := RoleSpecification[User]("admin")
+activeAdmins := activeUsers.And(adminUsers)
+
+// Usar no repository
+users, err := repo.FindMany(ctx, activeAdmins.ToQueryFilter())
+```
+
+**Especificações disponíveis:**
+- `ActiveSpecification[T]()` - Entidades ativas
+- `InactiveSpecification[T]()` - Entidades inativas
+- `CreatedTodaySpecification[T]()` - Criadas hoje
+- `RoleSpecification[T](role)` - Por role específico
+- `EmailSpecification[T](email)` - Por email
+- `ActiveAdminsSpecification[T]()` - Admins ativos
+
+## 6. Domain Events - Escalabilidade! 🚀
+
+```go
+// Criar evento
+event := NewUserCreatedEvent(userID, name, email)
+user.AddDomainEvent(event)
+
+// Publicar eventos
+for _, event := range user.GetDomainEvents() {
+    eventBus.Publish(ctx, event)
+}
+user.ClearDomainEvents()
+```
+
+**Eventos disponíveis:**
+- `UserCreatedEvent` - Usuário criado
+- `UserUpdatedEvent` - Usuário atualizado
+- `UserDeletedEvent` - Usuário deletado
+
 ## Conclusão
 
-O Repository Genérico é **SUPERIOR** porque:
+O Repository Genérico + QueryBuilder + Specification + Domain Events é **SUPERIOR** porque:
 
 ✅ Interface enxuta (10 métodos vs 50+)  
 ✅ 100% flexível (qualquer busca possível)  
@@ -477,5 +549,8 @@ O Repository Genérico é **SUPERIOR** porque:
 ✅ Paginação profissional inclusa  
 ✅ Agregações poderosas  
 ✅ Transações simples  
+✅ QueryBuilder facilita uso  
+✅ Specification reutiliza regras  
+✅ Domain Events para escalabilidade  
 
-**Você está 100% CERTO em querer isso!** 🎯🔥
+**Agora sim está 100% ENTERPRISE-READY!** 🎯🔥
