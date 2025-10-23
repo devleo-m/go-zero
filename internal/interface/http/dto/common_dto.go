@@ -10,9 +10,21 @@ import (
 
 // SuccessResponse representa uma resposta de sucesso genérica
 type SuccessResponse struct {
-	Success bool        `json:"success" example:"true"`
-	Message string      `json:"message" example:"Operation completed successfully"`
-	Data    interface{} `json:"data,omitempty"`
+	Success   bool        `json:"success" example:"true"`
+	Message   string      `json:"message" example:"Operation completed successfully"`
+	Data      interface{} `json:"data,omitempty"`
+	RequestID string      `json:"request_id,omitempty" example:"req_abc123def456"`
+	Timestamp time.Time   `json:"timestamp" example:"2024-01-15T10:30:00Z"`
+}
+
+// ErrorResponse representa uma resposta de erro genérica
+type ErrorResponse struct {
+	Success   bool      `json:"success" example:"false"`
+	Error     string    `json:"error" example:"VALIDATION_ERROR"`
+	Message   string    `json:"message" example:"Validation failed"`
+	RequestID string    `json:"request_id,omitempty" example:"req_abc123def456"`
+	Timestamp time.Time `json:"timestamp" example:"2024-01-15T10:30:00Z"`
+	TraceID   string    `json:"trace_id,omitempty" example:"trace_xyz789"`
 }
 
 // HealthCheckResponse representa a resposta do health check
@@ -22,6 +34,7 @@ type HealthCheckResponse struct {
 	Timestamp time.Time `json:"timestamp" example:"2024-01-15T10:30:00Z"`
 	Version   string    `json:"version" example:"1.0.0"`
 	Uptime    string    `json:"uptime" example:"2h30m15s"`
+	RequestID string    `json:"request_id,omitempty" example:"req_abc123def456"`
 }
 
 // ==========================================
@@ -54,6 +67,22 @@ type PaginationParams struct {
 	Limit int `form:"limit" binding:"min=1,max=100" example:"10"`
 }
 
+// PaginationResponse representa uma resposta paginada
+type PaginationResponse struct {
+	Data       interface{} `json:"data"`
+	Pagination Pagination  `json:"pagination"`
+}
+
+// Pagination representa informações de paginação
+type Pagination struct {
+	Page       int   `json:"page" example:"1"`
+	Limit      int   `json:"limit" example:"10"`
+	Total      int64 `json:"total" example:"100"`
+	TotalPages int   `json:"total_pages" example:"10"`
+	HasNext    bool  `json:"has_next" example:"true"`
+	HasPrev    bool  `json:"has_prev" example:"false"`
+}
+
 // GetPaginationDefaults retorna valores padrão para paginação
 func GetPaginationDefaults() (page, limit int) {
 	return 1, 10
@@ -71,6 +100,23 @@ func ValidatePagination(page, limit int) (int, int) {
 		limit = 100
 	}
 	return page, limit
+}
+
+// NewPaginationResponse cria uma resposta paginada
+func NewPaginationResponse(data interface{}, page, limit int, total int64) PaginationResponse {
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+
+	return PaginationResponse{
+		Data: data,
+		Pagination: Pagination{
+			Page:       page,
+			Limit:      limit,
+			Total:      total,
+			TotalPages: totalPages,
+			HasNext:    page < totalPages,
+			HasPrev:    page > 1,
+		},
+	}
 }
 
 // ==========================================
@@ -106,18 +152,54 @@ type FilterParams struct {
 // NewSuccessResponse cria uma resposta de sucesso
 func NewSuccessResponse(message string, data interface{}) SuccessResponse {
 	return SuccessResponse{
-		Success: true,
-		Message: message,
-		Data:    data,
+		Success:   true,
+		Message:   message,
+		Data:      data,
+		Timestamp: time.Now(),
+	}
+}
+
+// NewSuccessResponseWithRequestID cria uma resposta de sucesso com Request ID
+func NewSuccessResponseWithRequestID(message string, data interface{}, requestID string) SuccessResponse {
+	return SuccessResponse{
+		Success:   true,
+		Message:   message,
+		Data:      data,
+		RequestID: requestID,
+		Timestamp: time.Now(),
 	}
 }
 
 // NewErrorResponse cria uma resposta de erro
 func NewErrorResponse(error, message string) ErrorResponse {
 	return ErrorResponse{
-		Success: false,
-		Error:   error,
-		Message: message,
+		Success:   false,
+		Error:     error,
+		Message:   message,
+		Timestamp: time.Now(),
+	}
+}
+
+// NewErrorResponseWithRequestID cria uma resposta de erro com Request ID
+func NewErrorResponseWithRequestID(error, message, requestID string) ErrorResponse {
+	return ErrorResponse{
+		Success:   false,
+		Error:     error,
+		Message:   message,
+		RequestID: requestID,
+		Timestamp: time.Now(),
+	}
+}
+
+// NewErrorResponseWithTrace cria uma resposta de erro com Request ID e Trace ID
+func NewErrorResponseWithTrace(error, message, requestID, traceID string) ErrorResponse {
+	return ErrorResponse{
+		Success:   false,
+		Error:     error,
+		Message:   message,
+		RequestID: requestID,
+		TraceID:   traceID,
+		Timestamp: time.Now(),
 	}
 }
 

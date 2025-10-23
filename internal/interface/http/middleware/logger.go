@@ -113,39 +113,6 @@ func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 	}
 }
 
-// RequestIDMiddleware middleware para gerar e propagar request ID
-func RequestIDMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		requestID := c.GetHeader("X-Request-ID")
-		if requestID == "" {
-			requestID = generateRequestID()
-		}
-
-		// Adicionar ao contexto
-		c.Set("request_id", requestID)
-
-		// Adicionar ao header da resposta
-		c.Header("X-Request-ID", requestID)
-
-		c.Next()
-	}
-}
-
-// generateRequestID gera um ID único para a requisição
-func generateRequestID() string {
-	return time.Now().Format("20060102150405") + "-" + randomString(8)
-}
-
-// randomString gera uma string aleatória
-func randomString(length int) string {
-	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[time.Now().UnixNano()%int64(len(charset))]
-	}
-	return string(b)
-}
-
 // SecurityHeadersMiddleware middleware para adicionar headers de segurança
 func SecurityHeadersMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -168,45 +135,6 @@ func SecurityHeadersMiddleware() gin.HandlerFunc {
 		if c.Request.TLS != nil {
 			c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 		}
-
-		c.Next()
-	}
-}
-
-// RateLimitMiddleware middleware básico de rate limiting
-func RateLimitMiddleware() gin.HandlerFunc {
-	// Implementação simples de rate limiting por IP
-	// Em produção, usar Redis ou similar
-	requests := make(map[string][]time.Time)
-
-	return func(c *gin.Context) {
-		ip := c.ClientIP()
-		now := time.Now()
-
-		// Limpar requisições antigas (mais de 1 minuto)
-		if timestamps, exists := requests[ip]; exists {
-			var validTimestamps []time.Time
-			for _, ts := range timestamps {
-				if now.Sub(ts) < time.Minute {
-					validTimestamps = append(validTimestamps, ts)
-				}
-			}
-			requests[ip] = validTimestamps
-		}
-
-		// Verificar limite (100 requisições por minuto)
-		if len(requests[ip]) >= 100 {
-			c.JSON(429, gin.H{
-				"success": false,
-				"error":   "RATE_LIMIT_EXCEEDED",
-				"message": "Too many requests. Please try again later.",
-			})
-			c.Abort()
-			return
-		}
-
-		// Adicionar timestamp atual
-		requests[ip] = append(requests[ip], now)
 
 		c.Next()
 	}

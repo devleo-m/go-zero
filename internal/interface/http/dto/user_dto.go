@@ -138,17 +138,6 @@ type ListUsersResponse struct {
 	Pagination PaginationResponse `json:"pagination"`
 }
 
-// PaginationResponse representa os metadados de paginação
-type PaginationResponse struct {
-	CurrentPage int  `json:"current_page" example:"1"`
-	TotalPages  int  `json:"total_pages" example:"5"`
-	PageSize    int  `json:"page_size" example:"10"`
-	TotalItems  int  `json:"total_items" example:"47"`
-	ItemsInPage int  `json:"items_in_page" example:"10"`
-	HasNext     bool `json:"has_next" example:"true"`
-	HasPrevious bool `json:"has_previous" example:"false"`
-}
-
 // GetUserResponse representa a resposta da busca de usuário
 type GetUserResponse struct {
 	Success bool         `json:"success" example:"true"`
@@ -159,15 +148,6 @@ type GetUserResponse struct {
 // ==========================================
 // ERROR RESPONSE DTOs
 // ==========================================
-
-// ErrorResponse representa uma resposta de erro
-type ErrorResponse struct {
-	Success bool              `json:"success" example:"false"`
-	Error   string            `json:"error" example:"Validation failed"`
-	Message string            `json:"message" example:"Invalid input data"`
-	Code    string            `json:"code,omitempty" example:"VALIDATION_ERROR"`
-	Details []ValidationError `json:"details,omitempty"`
-}
 
 // ValidationError representa um erro de validação específico
 type ValidationError struct {

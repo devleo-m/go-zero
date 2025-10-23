@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -16,13 +17,24 @@ import (
 
 // ErrorHandler handler centralizado de erros
 type ErrorHandler struct {
-	logger *zap.Logger
+	logger        *zap.Logger
+	environment   string
+	enableDetails bool
+}
+
+// ErrorHandlerConfig configuração do error handler
+type ErrorHandlerConfig struct {
+	Logger        *zap.Logger
+	Environment   string
+	EnableDetails bool
 }
 
 // NewErrorHandler cria uma nova instância do ErrorHandler
-func NewErrorHandler(logger *zap.Logger) *ErrorHandler {
+func NewErrorHandler(config ErrorHandlerConfig) *ErrorHandler {
 	return &ErrorHandler{
-		logger: logger,
+		logger:        config.Logger,
+		environment:   config.Environment,
+		enableDetails: config.EnableDetails,
 	}
 }
 
@@ -344,4 +356,153 @@ func (h *ErrorHandler) HandleValidationError(c *gin.Context, field string, messa
 func (h *ErrorHandler) HandleBusinessError(c *gin.Context, code string, message string) {
 	response := dto.NewErrorResponse(code, message)
 	c.JSON(http.StatusUnprocessableEntity, response)
+}
+
+// ==========================================
+// ENHANCED ERROR HANDLING
+// ==========================================
+
+// ErrorResponseWithDetails representa uma resposta de erro com detalhes
+type ErrorResponseWithDetails struct {
+	Success   bool        `json:"success" example:"false"`
+	Error     string      `json:"error" example:"VALIDATION_ERROR"`
+	Message   string      `json:"message" example:"Validation failed"`
+	Details   interface{} `json:"details,omitempty"`
+	RequestID string      `json:"request_id,omitempty"`
+	Timestamp string      `json:"timestamp"`
+	TraceID   string      `json:"trace_id,omitempty"`
+}
+
+// HandleErrorWithDetails trata erros com detalhes adicionais
+func (h *ErrorHandler) HandleErrorWithDetails(c *gin.Context, err error, details interface{}) {
+	// Log do erro
+	h.logError(c, err)
+
+	// Extrair informações do contexto
+	requestID, _ := c.Get("request_id")
+	traceID, _ := c.Get("trace_id")
+
+	response := ErrorResponseWithDetails{
+		Success:   false,
+		Error:     h.getErrorCode(err),
+		Message:   h.getErrorMessage(err),
+		Details:   details,
+		RequestID: getStringValue(requestID),
+		Timestamp: time.Now().Format(time.RFC3339),
+		TraceID:   getStringValue(traceID),
+	}
+
+	// Determinar status code
+	statusCode := h.getStatusCode(err)
+	c.JSON(statusCode, response)
+}
+
+// HandleRetryableError trata erros que podem ser retentados
+func (h *ErrorHandler) HandleRetryableError(c *gin.Context, err error, retryAfter int) {
+	// Log do erro
+	h.logError(c, err)
+
+	response := dto.NewErrorResponse(
+		"RETRYABLE_ERROR",
+		"Service temporarily unavailable, please retry later",
+	)
+
+	// Adicionar header de retry
+	c.Header("Retry-After", fmt.Sprintf("%d", retryAfter))
+	c.JSON(http.StatusServiceUnavailable, response)
+}
+
+// HandleCircuitBreakerError trata erros de circuit breaker
+func (h *ErrorHandler) HandleCircuitBreakerError(c *gin.Context, service string) {
+	response := dto.NewErrorResponse(
+		"CIRCUIT_BREAKER_OPEN",
+		fmt.Sprintf("Service %s is temporarily unavailable due to high error rate", service),
+	)
+
+	c.JSON(http.StatusServiceUnavailable, response)
+}
+
+// ==========================================
+// HELPER FUNCTIONS
+// ==========================================
+
+// getErrorCode extrai o código do erro
+func (h *ErrorHandler) getErrorCode(err error) string {
+	if domainErr, ok := err.(*shared.DomainError); ok {
+		return domainErr.Code
+	}
+
+	// Mapear tipos de erro para códigos
+	switch {
+	case isValidationError(err):
+		return "VALIDATION_ERROR"
+	case isNotFoundError(err):
+		return "NOT_FOUND"
+	case isUnauthorizedError(err):
+		return "UNAUTHORIZED"
+	case isForbiddenError(err):
+		return "FORBIDDEN"
+	case isConflictError(err):
+		return "CONFLICT"
+	case isTimeoutError(err):
+		return "TIMEOUT"
+	default:
+		return "INTERNAL_ERROR"
+	}
+}
+
+// getErrorMessage extrai a mensagem do erro
+func (h *ErrorHandler) getErrorMessage(err error) string {
+	if domainErr, ok := err.(*shared.DomainError); ok {
+		return domainErr.Message
+	}
+
+	// Mapear tipos de erro para mensagens
+	switch {
+	case isValidationError(err):
+		return "Validation failed"
+	case isNotFoundError(err):
+		return "Resource not found"
+	case isUnauthorizedError(err):
+		return "Authentication required"
+	case isForbiddenError(err):
+		return "Insufficient permissions"
+	case isConflictError(err):
+		return "Resource conflict"
+	case isTimeoutError(err):
+		return "Request timeout"
+	default:
+		return "An internal error occurred"
+	}
+}
+
+// getStatusCode determina o status HTTP baseado no erro
+func (h *ErrorHandler) getStatusCode(err error) int {
+	switch {
+	case isValidationError(err):
+		return http.StatusBadRequest
+	case isNotFoundError(err):
+		return http.StatusNotFound
+	case isUnauthorizedError(err):
+		return http.StatusUnauthorized
+	case isForbiddenError(err):
+		return http.StatusForbidden
+	case isConflictError(err):
+		return http.StatusConflict
+	case isTimeoutError(err):
+		return http.StatusRequestTimeout
+	default:
+		return http.StatusInternalServerError
+	}
+}
+
+// getStringValue converte interface{} para string de forma segura
+func getStringValue(value interface{}) string {
+	if value == nil {
+		return ""
+	}
+	if str, ok := value.(string); ok {
+		return str
+	}
+	return fmt.Sprintf("%v", value)
 }

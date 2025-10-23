@@ -290,13 +290,15 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 		Message: "Users retrieved successfully",
 		Data:    dto.ToUserResponseSliceFromOutput(output.Users),
 		Pagination: dto.PaginationResponse{
-			CurrentPage: output.Pagination.CurrentPage,
-			TotalPages:  output.Pagination.TotalPages,
-			PageSize:    output.Pagination.PageSize,
-			TotalItems:  output.Pagination.TotalItems,
-			ItemsInPage: output.Pagination.ItemsInPage,
-			HasNext:     output.Pagination.HasNext,
-			HasPrevious: output.Pagination.HasPrevious,
+			Data: dto.ToUserResponseSliceFromOutput(output.Users),
+			Pagination: dto.Pagination{
+				Page:       output.Pagination.CurrentPage,
+				Limit:      output.Pagination.PageSize,
+				Total:      int64(output.Pagination.TotalItems),
+				TotalPages: output.Pagination.TotalPages,
+				HasNext:    output.Pagination.HasNext,
+				HasPrev:    output.Pagination.HasPrevious,
+			},
 		},
 	}
 

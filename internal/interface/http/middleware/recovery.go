@@ -199,7 +199,6 @@ func DevelopmentRecoveryHandler(logger *zap.Logger) func(c *gin.Context, recover
 			Success: false,
 			Error:   "INTERNAL_SERVER_ERROR",
 			Message: fmt.Sprintf("Panic: %v", recovered),
-			Code:    "PANIC_RECOVERED",
 		}
 
 		c.JSON(http.StatusInternalServerError, errorResponse)

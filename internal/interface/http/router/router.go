@@ -61,14 +61,24 @@ func NewRouter(config Config) *Router {
 
 	// Criar instâncias dos handlers
 	validator := validation.NewCustomValidator()
-	errorHandler := handlers.NewErrorHandler(config.Logger)
+	errorHandler := handlers.NewErrorHandler(handlers.ErrorHandlerConfig{
+		Logger:        config.Logger,
+		Environment:   config.Environment,
+		EnableDetails: config.Environment != "production",
+	})
 	userHandler := handlers.NewUserHandler(
 		config.UserUseCaseAggregate,
 		validator,
 		errorHandler,
 		config.Logger,
 	)
-	healthHandler := handlers.NewHealthHandler(config.Logger)
+	healthHandler := handlers.NewHealthHandler(handlers.HealthHandlerConfig{
+		Logger:      config.Logger,
+		Version:     "1.0.0",
+		Environment: config.Environment,
+		BuildTime:   "2024-01-15T10:30:00Z",
+		GitCommit:   "abc123def",
+	})
 
 	router := &Router{
 		engine:        engine,
@@ -108,22 +118,19 @@ func (r *Router) setupGlobalMiddlewares() {
 	r.engine.Use(middleware.CORSForDevelopment())
 
 	// Middleware de request ID
-	r.engine.Use(middleware.RequestIDMiddleware())
+	r.engine.Use(middleware.RequestIDMiddleware(r.logger))
 
 	// Middleware de logging
 	r.engine.Use(middleware.LoggerMiddleware(r.logger))
 
-	// Middleware de headers de segurança
-	r.engine.Use(middleware.SecurityHeadersMiddleware())
+	// Middleware de métricas
+	r.engine.Use(middleware.MetricsMiddleware(r.logger))
 
-	// Middleware de rate limiting
-	r.engine.Use(middleware.RateLimitMiddleware())
-
-	// Middleware de timeout
-	r.engine.Use(middleware.TimeoutMiddleware(30 * time.Second))
+	// Middleware de requisições lentas
+	r.engine.Use(middleware.SlowRequestMiddleware(5*time.Second, r.logger))
 
 	// Middleware de tamanho máximo do body
-	r.engine.Use(middleware.MaxBodySizeMiddleware(10 * 1024 * 1024)) // 10MB
+	r.engine.Use(middleware.RequestSizeMiddleware(10*1024*1024, r.logger)) // 10MB
 
 	// Middleware de tratamento de erros
 	r.engine.Use(r.errorHandler.ErrorHandlerMiddleware())
@@ -155,6 +162,8 @@ func (r *Router) setupHealthRoutes() {
 		health.GET("/ready", r.healthHandler.ReadinessCheck)
 		health.GET("/live", r.healthHandler.LivenessCheck)
 		health.GET("/version", r.healthHandler.Version)
+		health.GET("/metrics", r.healthHandler.Metrics)
+		health.GET("/health/detailed", r.healthHandler.DetailedHealthCheck)
 	}
 }
 
