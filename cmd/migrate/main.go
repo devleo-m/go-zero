@@ -11,8 +11,8 @@ import (
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 
-	"github.com/devleo-m/go-zero/internal/infra/config"
-	"github.com/devleo-m/go-zero/internal/infra/logger"
+	"github.com/devleo-m/go-zero/internal/infrastructure/config"
+	"github.com/devleo-m/go-zero/internal/infrastructure/logger"
 )
 
 func main() {
@@ -42,7 +42,7 @@ func main() {
 	defer logger.Sync()
 
 	// Configurar migrator
-	migrationsPath := "file://internal/infra/database/migrations"
+	migrationsPath := "file://database/migrations"
 	databaseURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=%s",
 		cfg.Database.User,
 		cfg.Database.Password,

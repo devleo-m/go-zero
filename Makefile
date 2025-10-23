@@ -109,17 +109,47 @@ docker-logs: ## Mostra logs dos containers
 migrate-up: ## Executa migrations para cima
 	@echo "$(BLUE)📊 Executando migrations...$(NC)"
 	@echo "$(YELLOW)================================================$(NC)"
-	@migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/go_zero?sslmode=disable" up
+	@migrate -path database/migrations -database "postgres://postgres:postgres@localhost:5432/go_zero?sslmode=disable" up
 
 migrate-down: ## Executa migrations para baixo
 	@echo "$(BLUE)📊 Revertendo migrations...$(NC)"
 	@echo "$(YELLOW)================================================$(NC)"
-	@migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/go_zero?sslmode=disable" down
+	@migrate -path database/migrations -database "postgres://postgres:postgres@localhost:5432/go_zero?sslmode=disable" down
 
 migrate-create: ## Cria nova migration (use: make migrate-create NAME=nome_da_migration)
 	@echo "$(BLUE)📊 Criando nova migration...$(NC)"
 	@echo "$(YELLOW)================================================$(NC)"
-	@migrate create -ext sql -dir migrations -seq $(NAME)
+	@migrate create -ext sql -dir database/migrations -seq $(NAME)
+
+# Seeds
+seed: ## Executa todos os seeds
+	@echo "$(BLUE)🌱 Executando seeds...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@go run cmd/seed/main.go
+
+seed-users: ## Executa apenas seed de usuários
+	@echo "$(BLUE)👥 Executando seed de usuários...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@go run cmd/seed/main.go -action=users
+
+seed-clear: ## Limpa todos os dados seedados
+	@echo "$(BLUE)🧹 Limpando dados seedados...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@go run cmd/seed/main.go -action=clear
+
+seed-clear-users: ## Limpa apenas dados de usuários seedados
+	@echo "$(BLUE)🧹 Limpando dados de usuários seedados...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@go run cmd/seed/main.go -action=clear-users
+
+dev-setup: ## Configura ambiente de desenvolvimento (migrations + seeds)
+	@echo "$(BLUE)🚀 Configurando ambiente de desenvolvimento...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@echo "$(GREEN)1. Executando migrations...$(NC)"
+	@make migrate-up
+	@echo "$(GREEN)2. Executando seeds...$(NC)"
+	@make seed
+	@echo "$(GREEN)✅ Ambiente configurado e populado!$(NC)"
 
 coverage: ## Gera relatório de cobertura
 	@echo "$(BLUE)📊 Gerando relatório de cobertura...$(NC)"
@@ -180,6 +210,14 @@ info: ## Mostra informações do projeto
 	@echo "    ├── aggregation.go         # Agregações"
 	@echo "    ├── transaction.go         # Transações"
 	@echo "    └── README.md              # Documentação"
+	@echo ""
+	@echo "$(WHITE)Comandos de Database:$(NC)"
+	@echo "  make migrate-up              # Executa migrations"
+	@echo "  make migrate-down            # Reverte migrations"
+	@echo "  make migrate-create NAME=... # Cria nova migration"
+	@echo "  make seed                    # Executa todos os seeds"
+	@echo "  make seed-users              # Executa seed de usuários"
+	@echo "  make dev-setup               # Setup completo (migrate + seed)"
 
 # Comando padrão
 .DEFAULT_GOAL := help
