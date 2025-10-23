@@ -1,231 +1,185 @@
-# ===========================================
-# GO ZERO - MAKEFILE PARA DESENVOLVIMENTO
-# ===========================================
-
-# Variáveis
-APP_NAME=go-zero
-DOCKER_COMPOSE=docker-compose
-GO=go
+# Makefile para GO ZERO - Repository Genérico
+.PHONY: help run-examples test lint clean
 
 # Cores para output
+RED=\033[0;31m
 GREEN=\033[0;32m
 YELLOW=\033[1;33m
-RED=\033[0;31m
+BLUE=\033[0;34m
+PURPLE=\033[0;35m
+CYAN=\033[0;36m
+WHITE=\033[1;37m
 NC=\033[0m # No Color
 
-.PHONY: help
+# Configurações
+GO_VERSION := $(shell go version | cut -d' ' -f3)
+PROJECT_NAME := go-zero
+
 help: ## Mostra esta ajuda
-	@echo "$(GREEN)GO ZERO - Comandos Disponíveis$(NC)"
-	@echo "=================================="
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "$(YELLOW)%-20s$(NC) %s\n", $$1, $$2}'
+	@echo "$(CYAN)🚀 GO ZERO - Repository Genérico Profissional$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@echo ""
+	@echo "$(WHITE)Comandos disponíveis:$(NC)"
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@echo ""
+	@echo "$(YELLOW)Exemplos de uso:$(NC)"
+	@echo "  make test           # Executa todos os testes"
+	@echo "  make lint           # Executa linter"
+	@echo "  make clean          # Limpa arquivos temporários"
 
-# ===========================================
-# COMANDOS DE DOCKER
-# ===========================================
 
-.PHONY: docker-up
-docker-up: ## Sobe todos os serviços (PostgreSQL + Redis)
-	@echo "$(GREEN)🚀 Subindo serviços Docker...$(NC)"
-	$(DOCKER_COMPOSE) up -d
-	@echo "$(GREEN)✅ Serviços subiram com sucesso!$(NC)"
-	@echo "$(YELLOW)📊 Serviços disponíveis:$(NC)"
-	@echo "  - PostgreSQL: localhost:5432"
-	@echo "  - Redis: localhost:6379"
+test: ## Executa todos os testes
+	@echo "$(BLUE)🧪 Executando testes...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@go test -v -cover ./...
 
-.PHONY: docker-down
-docker-down: ## Para todos os serviços
-	@echo "$(YELLOW)🛑 Parando serviços Docker...$(NC)"
-	$(DOCKER_COMPOSE) down
-	@echo "$(GREEN)✅ Serviços parados!$(NC)"
+test-unit: ## Executa apenas testes unitários
+	@echo "$(BLUE)🧪 Executando testes unitários...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@go test -v -cover ./internal/domain/...
 
-.PHONY: docker-logs
-docker-logs: ## Mostra logs dos serviços
-	$(DOCKER_COMPOSE) logs -f
+test-integration: ## Executa apenas testes de integração
+	@echo "$(BLUE)🧪 Executando testes de integração...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@go test -v -cover ./tests/integration/...
 
-.PHONY: docker-restart
-docker-restart: ## Reinicia todos os serviços
-	@echo "$(YELLOW)🔄 Reiniciando serviços...$(NC)"
-	$(DOCKER_COMPOSE) restart
-	@echo "$(GREEN)✅ Serviços reiniciados!$(NC)"
+test-e2e: ## Executa apenas testes end-to-end
+	@echo "$(BLUE)🧪 Executando testes end-to-end...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@go test -v -cover ./tests/e2e/...
 
-.PHONY: docker-status
-docker-status: ## Mostra status dos containers
-	@echo "$(GREEN)📊 Status dos Containers:$(NC)"
-	$(DOCKER_COMPOSE) ps
+lint: ## Executa linter
+	@echo "$(BLUE)🔍 Executando linter...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@golangci-lint run
 
-# ===========================================
-# COMANDOS DE DESENVOLVIMENTO
-# ===========================================
+lint-fix: ## Executa linter e corrige problemas automaticamente
+	@echo "$(BLUE)🔧 Executando linter e corrigindo problemas...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@golangci-lint run --fix
 
-.PHONY: dev
-dev: ## Roda a aplicação em modo desenvolvimento (com Air)
-	@echo "$(GREEN)🚀 Iniciando aplicação em modo desenvolvimento...$(NC)"
-	@echo "$(YELLOW)💡 Certifique-se de que o arquivo .env existe!$(NC)"
-	air -c .air.toml
+format: ## Formata código Go
+	@echo "$(BLUE)🎨 Formatando código...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@go fmt ./...
 
-.PHONY: run
-run: ## Roda a aplicação sem hot-reload
-	@echo "$(GREEN)🚀 Iniciando aplicação...$(NC)"
-	$(GO) run cmd/server/main.go
+vet: ## Executa go vet
+	@echo "$(BLUE)🔍 Executando go vet...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@go vet ./...
 
-.PHONY: build
-build: ## Compila a aplicação
-	@echo "$(GREEN)🔨 Compilando aplicação...$(NC)"
-	$(GO) build -o bin/$(APP_NAME) cmd/server/main.go
-	@echo "$(GREEN)✅ Aplicação compilada em bin/$(APP_NAME)$(NC)"
-
-# ===========================================
-# COMANDOS DE DEPENDÊNCIAS
-# ===========================================
-
-.PHONY: deps
-deps: ## Baixa dependências Go
-	@echo "$(GREEN)📦 Baixando dependências...$(NC)"
-	$(GO) mod download
-	$(GO) mod tidy
-	@echo "$(GREEN)✅ Dependências atualizadas!$(NC)"
-
-.PHONY: deps-update
-deps-update: ## Atualiza dependências
-	@echo "$(GREEN)🔄 Atualizando dependências...$(NC)"
-	$(GO) get -u ./...
-	$(GO) mod tidy
-	@echo "$(GREEN)✅ Dependências atualizadas!$(NC)"
-
-# ===========================================
-# COMANDOS DE TESTE
-# ===========================================
-
-.PHONY: test
-test: ## Roda todos os testes
-	@echo "$(GREEN)🧪 Executando testes...$(NC)"
-	$(GO) test -v ./...
-
-.PHONY: test-coverage
-test-coverage: ## Roda testes com coverage
-	@echo "$(GREEN)📊 Executando testes com coverage...$(NC)"
-	$(GO) test -v -cover ./...
-
-# ===========================================
-# COMANDOS DE LIMPEZA
-# ===========================================
-
-.PHONY: clean
 clean: ## Limpa arquivos temporários
-	@echo "$(YELLOW)🧹 Limpando arquivos temporários...$(NC)"
-	rm -rf tmp/
-	rm -rf bin/
-	$(GO) clean
-	@echo "$(GREEN)✅ Limpeza concluída!$(NC)"
+	@echo "$(BLUE)🧹 Limpando arquivos temporários...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@go clean
+	@rm -rf coverage.out
+	@rm -rf tmp/
+	@rm -rf .air/
 
-.PHONY: clean-docker
-clean-docker: ## Remove containers e volumes Docker
-	@echo "$(YELLOW)🧹 Limpando Docker...$(NC)"
-	$(DOCKER_COMPOSE) down -v --remove-orphans
-	docker system prune -f
-	@echo "$(GREEN)✅ Docker limpo!$(NC)"
+build: ## Compila o projeto
+	@echo "$(BLUE)🔨 Compilando projeto...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@go build -o bin/$(PROJECT_NAME) ./cmd/api
 
-# ===========================================
-# COMANDOS DE SETUP
-# ===========================================
+run: ## Executa o projeto
+	@echo "$(BLUE)🚀 Executando projeto...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@go run ./cmd/api
 
-.PHONY: setup
-setup: ## Setup inicial do projeto
-	@echo "$(GREEN)🛠️  Configurando projeto GO ZERO...$(NC)"
-	@if [ ! -f .env ]; then \
-		echo "$(YELLOW)📝 Criando arquivo .env...$(NC)"; \
-		cp .env.example .env; \
-		echo "$(GREEN)✅ Arquivo .env criado! Edite as configurações se necessário.$(NC)"; \
-	else \
-		echo "$(GREEN)✅ Arquivo .env já existe!$(NC)"; \
-	fi
-	@echo "$(GREEN)📦 Baixando dependências...$(NC)"
-	$(GO) mod download
-	@echo "$(GREEN)🚀 Subindo serviços Docker...$(NC)"
-	$(DOCKER_COMPOSE) up -d
-	@echo "$(GREEN)✅ Setup concluído!$(NC)"
-	@echo "$(YELLOW)💡 Próximos passos:$(NC)"
-	@echo "  1. Edite o arquivo .env se necessário"
-	@echo "  2. Execute 'make dev' para iniciar o desenvolvimento"
+dev: ## Executa em modo desenvolvimento com hot reload
+	@echo "$(BLUE)🔥 Executando em modo desenvolvimento...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@air
 
-# ===========================================
-# COMANDOS DE VERIFICAÇÃO
-# ===========================================
+docker-up: ## Sobe containers Docker
+	@echo "$(BLUE)🐳 Subindo containers Docker...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@docker-compose up -d
 
-.PHONY: check-db
-check-db: ## Verifica conexão com PostgreSQL
-	@echo "$(GREEN)🔍 Verificando conexão com PostgreSQL...$(NC)"
-	@docker exec $(APP_NAME)-db psql -U postgres -d go_zero_dev -c "SELECT version();" || echo "$(RED)❌ Erro ao conectar com PostgreSQL$(NC)"
+docker-down: ## Para containers Docker
+	@echo "$(BLUE)🐳 Parando containers Docker...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@docker-compose down
 
-.PHONY: check-redis
-check-redis: ## Verifica conexão com Redis
-	@echo "$(GREEN)🔍 Verificando conexão com Redis...$(NC)"
-	@docker exec $(APP_NAME)-redis redis-cli ping || echo "$(RED)❌ Erro ao conectar com Redis$(NC)"
+docker-logs: ## Mostra logs dos containers
+	@echo "$(BLUE)📋 Mostrando logs dos containers...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@docker-compose logs -f
 
-.PHONY: check-all
-check-all: ## Verifica todos os serviços
-	@echo "$(GREEN)🔍 Verificando todos os serviços...$(NC)"
-	@make check-db
-	@make check-redis
-	@echo "$(GREEN)✅ Verificação concluída!$(NC)"
+migrate-up: ## Executa migrations para cima
+	@echo "$(BLUE)📊 Executando migrations...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/go_zero?sslmode=disable" up
 
-# ===========================================
-# COMANDOS DE DESENVOLVIMENTO AVANÇADO
-# ===========================================
+migrate-down: ## Executa migrations para baixo
+	@echo "$(BLUE)📊 Revertendo migrations...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/go_zero?sslmode=disable" down
 
-.PHONY: shell-db
-shell-db: ## Abre shell do PostgreSQL
-	@echo "$(GREEN)🐘 Abrindo shell do PostgreSQL...$(NC)"
-	docker exec -it $(APP_NAME)-db psql -U postgres -d go_zero_dev
+migrate-create: ## Cria nova migration (use: make migrate-create NAME=nome_da_migration)
+	@echo "$(BLUE)📊 Criando nova migration...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@migrate create -ext sql -dir migrations -seq $(NAME)
 
-.PHONY: shell-redis
-shell-redis: ## Abre shell do Redis
-	@echo "$(GREEN)🔴 Abrindo shell do Redis...$(NC)"
-	docker exec -it $(APP_NAME)-redis redis-cli
+coverage: ## Gera relatório de cobertura
+	@echo "$(BLUE)📊 Gerando relatório de cobertura...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@go test -coverprofile=coverage.out ./...
+	@go tool cover -html=coverage.out -o coverage.html
+	@echo "$(GREEN)✅ Relatório de cobertura gerado: coverage.html$(NC)"
 
-# ===========================================
-# COMANDOS DE MIGRATIONS
-# ===========================================
+benchmark: ## Executa benchmarks
+	@echo "$(BLUE)⚡ Executando benchmarks...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@go test -bench=. -benchmem ./...
 
-.PHONY: migrate-up
-migrate-up: ## Aplica todas as migrations
-	@echo "$(GREEN)🚀 Aplicando migrations...$(NC)"
-	$(GO) run cmd/migrate/main.go -direction=up
-	@echo "$(GREEN)✅ Migrations aplicadas!$(NC)"
+deps: ## Instala dependências
+	@echo "$(BLUE)📦 Instalando dependências...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@go mod download
+	@go mod tidy
 
-.PHONY: migrate-down
-migrate-down: ## Reverte última migration
-	@echo "$(YELLOW)🔄 Revertendo última migration...$(NC)"
-	$(GO) run cmd/migrate/main.go -direction=down -steps=1
-	@echo "$(GREEN)✅ Migration revertida!$(NC)"
+deps-update: ## Atualiza dependências
+	@echo "$(BLUE)📦 Atualizando dependências...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@go get -u ./...
+	@go mod tidy
 
-.PHONY: migrate-down-all
-migrate-down-all: ## Reverte todas as migrations
-	@echo "$(RED)⚠️  Revertendo TODAS as migrations...$(NC)"
-	$(GO) run cmd/migrate/main.go -direction=down
-	@echo "$(GREEN)✅ Todas as migrations revertidas!$(NC)"
+install-tools: ## Instala ferramentas de desenvolvimento
+	@echo "$(BLUE)🛠️ Instalando ferramentas de desenvolvimento...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@go install github.com/cosmtrek/air@latest
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	@go install github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+	@go install github.com/swaggo/swag/cmd/swag@latest
 
-.PHONY: migrate-force
-migrate-force: ## Força versão específica (uso: make migrate-force version=1)
-	@echo "$(YELLOW)🔧 Forçando versão da migration...$(NC)"
-	$(GO) run cmd/migrate/main.go -direction=force -steps=$(version)
-	@echo "$(GREEN)✅ Versão forçada!$(NC)"
+docs: ## Gera documentação
+	@echo "$(BLUE)📚 Gerando documentação...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@swag init -g cmd/api/main.go -o docs/swagger
 
-.PHONY: migrate-version
-migrate-version: ## Mostra versão atual das migrations
-	@echo "$(GREEN)📊 Verificando versão das migrations...$(NC)"
-	$(GO) run cmd/migrate/main.go -direction=up -steps=0
-	@echo "$(GREEN)✅ Verificação concluída!$(NC)"
+check: lint vet test ## Executa todas as verificações
+	@echo "$(GREEN)✅ Todas as verificações passaram!$(NC)"
 
-.PHONY: migrate-create
-migrate-create: ## Cria nova migration (uso: make migrate-create name=add_phone_to_users)
-	@echo "$(GREEN)📝 Criando nova migration...$(NC)"
-	@cd internal/infra/database/migrations && migrate create -ext sql -dir . -seq $(name)
-	@echo "$(GREEN)✅ Migration criada!$(NC)"
-	@echo "$(YELLOW)💡 Edite os arquivos .up.sql e .down.sql$(NC)"
+ci: deps check ## Executa pipeline de CI
+	@echo "$(GREEN)✅ Pipeline de CI executado com sucesso!$(NC)"
 
-# ===========================================
-# COMANDO PADRÃO
-# ===========================================
 
+# Informações do projeto
+info: ## Mostra informações do projeto
+	@echo "$(CYAN)📋 Informações do Projeto$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@echo "$(WHITE)Projeto:$(NC) $(PROJECT_NAME)"
+	@echo "$(WHITE)Go Version:$(NC) $(GO_VERSION)"
+	@echo ""
+	@echo "$(WHITE)Estrutura do Repository Genérico:$(NC)"
+	@echo "  📁 internal/domain/shared/"
+	@echo "    ├── repository.go          # Interface genérica"
+	@echo "    ├── query_filter.go        # Sistema de filtros"
+	@echo "    ├── paginated_result.go    # Paginação profissional"
+	@echo "    ├── aggregation.go         # Agregações"
+	@echo "    ├── transaction.go         # Transações"
+	@echo "    └── README.md              # Documentação"
+
+# Comando padrão
 .DEFAULT_GOAL := help
