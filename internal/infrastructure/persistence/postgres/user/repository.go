@@ -1,4 +1,3 @@
-// internal/infrastructure/persistence/postgres/user/repository.go
 package user
 
 import (
@@ -6,434 +5,408 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/devleo-m/go-zero/internal/domain/shared"
-	"github.com/devleo-m/go-zero/internal/domain/user"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/devleo-m/go-zero/internal/domain/shared"
+	"github.com/devleo-m/go-zero/internal/domain/user"
 )
 
-// Repository implementa a interface do repositório de usuários usando GORM
-type Repository struct {
-	db *gorm.DB
+// Logger interface para logging
+type Logger interface {
+	Debug(msg string, fields ...interface{})
+	Info(msg string, fields ...interface{})
+	Warn(msg string, fields ...interface{})
+	Error(msg string, fields ...interface{})
 }
 
-// NewRepository cria uma nova instância do repositório
-func NewRepository(db *gorm.DB) *Repository {
+// Repository implementa a interface user.Repository usando GORM
+type Repository struct {
+	db     *gorm.DB
+	logger Logger
+}
+
+// NewRepository cria uma nova instância do repository
+func NewRepository(db *gorm.DB, logger Logger) *Repository {
 	return &Repository{
-		db: db,
+		db:     db,
+		logger: logger,
 	}
 }
 
 // ==========================================
-// CRUD BÁSICO
+// MÉTODOS CRUD BÁSICOS
 // ==========================================
 
 // Create cria um novo usuário
 func (r *Repository) Create(ctx context.Context, entity *user.User) error {
 	model := ToModel(entity)
 
+	r.logger.Debug("Creating user",
+		"email", model.Email,
+		"role", model.Role,
+		"status", model.Status,
+	)
+
 	if err := r.db.WithContext(ctx).Create(model).Error; err != nil {
+		r.logger.Error("Failed to create user",
+			"error", err,
+			"email", model.Email,
+		)
 		return fmt.Errorf("failed to create user: %w", err)
 	}
 
-	// Atualizar entidade com dados do banco
-	updatedUser, err := ToDomain(model)
-	if err != nil {
-		return fmt.Errorf("failed to convert model to domain: %w", err)
-	}
-	*entity = *updatedUser
+	r.logger.Info("User created successfully",
+		"id", model.ID,
+		"email", model.Email,
+	)
 
 	return nil
 }
 
-// FindOne busca uma entidade baseado em filtros
-func (r *Repository) FindOne(ctx context.Context, filter shared.QueryFilter) (*user.User, error) {
-	var model UserModel
-
-	query, err := QueryFilterToGORM(filter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert filter: %w", err)
-	}
-
-	if err := r.db.WithContext(ctx).Scopes(query).First(&model).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, shared.NewDomainError("USER_NOT_FOUND", "user not found")
-		}
-		return nil, fmt.Errorf("failed to find user: %w", err)
-	}
-
-	return ToDomain(&model)
-}
-
-// FindMany busca múltiplas entidades baseado em filtros
-func (r *Repository) FindMany(ctx context.Context, filter shared.QueryFilter) ([]*user.User, error) {
-	var models []*UserModel
-
-	query, err := QueryFilterToGORM(filter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert filter: %w", err)
-	}
-
-	if err := r.db.WithContext(ctx).Scopes(query).Find(&models).Error; err != nil {
-		return nil, fmt.Errorf("failed to find users: %w", err)
-	}
-
-	return ToDomainSlice(models)
-}
-
-// FindByID busca uma entidade por ID
+// FindByID busca um usuário por ID
 func (r *Repository) FindByID(ctx context.Context, id uuid.UUID) (*user.User, error) {
 	var model UserModel
 
-	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&model).Error; err != nil {
+	r.logger.Debug("Finding user by ID", "id", id)
+
+	if err := r.db.WithContext(ctx).First(&model, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, shared.NewDomainError("USER_NOT_FOUND", "user not found")
+			r.logger.Debug("User not found", "id", id)
+			return nil, nil
 		}
+
+		r.logger.Error("Failed to find user by ID",
+			"error", err,
+			"id", id,
+		)
 		return nil, fmt.Errorf("failed to find user by ID: %w", err)
 	}
 
-	return ToDomain(&model)
+	domainUser, err := ToDomain(&model)
+	if err != nil {
+		r.logger.Error("Failed to convert user to domain",
+			"error", err,
+			"id", id,
+		)
+		return nil, fmt.Errorf("failed to convert user to domain: %w", err)
+	}
+
+	r.logger.Debug("User found successfully", "id", id)
+	return domainUser, nil
 }
 
-// Update atualiza uma entidade existente
-func (r *Repository) Update(ctx context.Context, id uuid.UUID, entity *user.User) error {
+// FindByEmail busca um usuário por email
+func (r *Repository) FindByEmail(ctx context.Context, email string) (*user.User, error) {
+	var model UserModel
+
+	r.logger.Debug("Finding user by email", "email", email)
+
+	if err := r.db.WithContext(ctx).First(&model, "email = ?", email).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			r.logger.Debug("User not found by email", "email", email)
+			return nil, nil
+		}
+
+		r.logger.Error("Failed to find user by email",
+			"error", err,
+			"email", email,
+		)
+		return nil, fmt.Errorf("failed to find user by email: %w", err)
+	}
+
+	domainUser, err := ToDomain(&model)
+	if err != nil {
+		r.logger.Error("Failed to convert user to domain",
+			"error", err,
+			"email", email,
+		)
+		return nil, fmt.Errorf("failed to convert user to domain: %w", err)
+	}
+
+	r.logger.Debug("User found by email", "email", email)
+	return domainUser, nil
+}
+
+// Update atualiza um usuário
+func (r *Repository) Update(ctx context.Context, entity *user.User) error {
 	model := ToModel(entity)
 
-	result := r.db.WithContext(ctx).Where("id = ?", id).Updates(model)
-	if result.Error != nil {
-		return fmt.Errorf("failed to update user: %w", result.Error)
+	r.logger.Debug("Updating user",
+		"id", model.ID,
+		"email", model.Email,
+	)
+
+	if err := r.db.WithContext(ctx).Save(model).Error; err != nil {
+		r.logger.Error("Failed to update user",
+			"error", err,
+			"id", model.ID,
+		)
+		return fmt.Errorf("failed to update user: %w", err)
 	}
 
-	if result.RowsAffected == 0 {
-		return shared.NewDomainError("USER_NOT_FOUND", "user not found")
-	}
-
+	r.logger.Info("User updated successfully", "id", model.ID)
 	return nil
 }
 
-// Delete remove uma entidade (soft delete)
+// Delete remove um usuário (soft delete)
 func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
-	result := r.db.WithContext(ctx).Where("id = ?", id).Delete(&UserModel{})
-	if result.Error != nil {
-		return fmt.Errorf("failed to delete user: %w", result.Error)
+	r.logger.Debug("Deleting user", "id", id)
+
+	if err := r.db.WithContext(ctx).Delete(&UserModel{}, "id = ?", id).Error; err != nil {
+		r.logger.Error("Failed to delete user",
+			"error", err,
+			"id", id,
+		)
+		return fmt.Errorf("failed to delete user: %w", err)
 	}
 
-	if result.RowsAffected == 0 {
-		return shared.NewDomainError("USER_NOT_FOUND", "user not found")
-	}
-
-	return nil
-}
-
-// HardDelete remove permanentemente uma entidade
-func (r *Repository) HardDelete(ctx context.Context, id uuid.UUID) error {
-	result := r.db.WithContext(ctx).Unscoped().Where("id = ?", id).Delete(&UserModel{})
-	if result.Error != nil {
-		return fmt.Errorf("failed to hard delete user: %w", result.Error)
-	}
-
-	if result.RowsAffected == 0 {
-		return shared.NewDomainError("USER_NOT_FOUND", "user not found")
-	}
-
-	return nil
-}
-
-// Restore restaura uma entidade soft deleted
-func (r *Repository) Restore(ctx context.Context, id uuid.UUID) error {
-	result := r.db.WithContext(ctx).Unscoped().Model(&UserModel{}).Where("id = ?", id).Update("deleted_at", nil)
-	if result.Error != nil {
-		return fmt.Errorf("failed to restore user: %w", result.Error)
-	}
-
-	if result.RowsAffected == 0 {
-		return shared.NewDomainError("USER_NOT_FOUND", "user not found")
-	}
-
+	r.logger.Info("User deleted successfully", "id", id)
 	return nil
 }
 
 // ==========================================
-// PAGINAÇÃO
+// MÉTODOS DE BUSCA AVANÇADA
 // ==========================================
 
-// Paginate retorna resultados paginados com metadados
-func (r *Repository) Paginate(ctx context.Context, filter shared.QueryFilter) (*shared.PaginatedResult[*user.User], error) {
-	// Validar filtro
-	if err := filter.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid filter: %w", err)
-	}
+// FindMany busca múltiplos usuários com filtros
+func (r *Repository) FindMany(ctx context.Context, filter shared.QueryFilter) ([]*user.User, error) {
+	var models []*UserModel
 
-	// Contar total de registros
-	var total int64
-	countQuery, err := QueryFilterToGORM(filter)
+	r.logger.Debug("Finding users with filter",
+		"where_count", len(filter.Where),
+		"limit", filter.Limit,
+	)
+
+	db, err := r.applyFilter(r.db.WithContext(ctx), filter)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert filter: %w", err)
+		r.logger.Error("Failed to apply filter",
+			"error", err,
+		)
+		return nil, err
 	}
 
-	if err := r.db.WithContext(ctx).Model(&UserModel{}).Scopes(countQuery).Count(&total).Error; err != nil {
-		return nil, fmt.Errorf("failed to count users: %w", err)
+	if err := db.Find(&models).Error; err != nil {
+		r.logger.Error("Failed to find users",
+			"error", err,
+		)
+		return nil, fmt.Errorf("failed to find users: %w", err)
+	}
+
+	users, err := ToDomainSlice(models)
+	if err != nil {
+		r.logger.Error("Failed to convert users to domain",
+			"error", err,
+		)
+		return nil, fmt.Errorf("failed to convert users to domain: %w", err)
+	}
+
+	r.logger.Debug("Users found", "count", len(users))
+	return users, nil
+}
+
+// Count conta usuários com filtros
+func (r *Repository) Count(ctx context.Context, filter shared.QueryFilter) (int64, error) {
+	var count int64
+
+	r.logger.Debug("Counting users with filter",
+		"where_count", len(filter.Where),
+	)
+
+	db, err := r.applyFilter(r.db.WithContext(ctx).Model(&UserModel{}), filter)
+	if err != nil {
+		r.logger.Error("Failed to apply filter for count",
+			"error", err,
+		)
+		return 0, err
+	}
+
+	if err := db.Count(&count).Error; err != nil {
+		r.logger.Error("Failed to count users",
+			"error", err,
+		)
+		return 0, fmt.Errorf("failed to count users: %w", err)
+	}
+
+	r.logger.Debug("Users counted", "count", count)
+	return count, nil
+}
+
+// Paginate busca usuários com paginação
+func (r *Repository) Paginate(ctx context.Context, filter shared.QueryFilter) (*shared.PaginatedResult[*user.User], error) {
+	// Contar total de registros
+	total, err := r.Count(ctx, filter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count users for pagination: %w", err)
 	}
 
 	// Buscar registros
 	users, err := r.FindMany(ctx, filter)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find users: %w", err)
+		return nil, fmt.Errorf("failed to find users for pagination: %w", err)
 	}
 
-	// Criar resultado paginado
-	result := shared.NewPaginatedResult(
-		users,
-		total,
-		filter.Page,
-		filter.PageSize,
-	)
+	// Calcular metadados de paginação
+	page := filter.Page
+	pageSize := filter.PageSize
+	if pageSize <= 0 {
+		pageSize = 20 // default
+	}
+	if page <= 0 {
+		page = 1
+	}
 
-	return result, nil
+	totalPages := int((total + int64(pageSize) - 1) / int64(pageSize))
+	hasNext := page < totalPages
+	hasPrev := page > 1
+
+	return &shared.PaginatedResult[*user.User]{
+		Data: users,
+		Pagination: shared.PaginationMeta{
+			CurrentPage: page,
+			TotalPages:  totalPages,
+			PageSize:    pageSize,
+			TotalItems:  total,
+			ItemsInPage: len(users),
+			HasNext:     hasNext,
+			HasPrevious: hasPrev,
+		},
+	}, nil
 }
 
 // ==========================================
-// AGREGAÇÕES E CONTAGENS
-// ==========================================
-
-// Count conta entidades baseado em filtros
-func (r *Repository) Count(ctx context.Context, filter shared.QueryFilter) (int64, error) {
-	var count int64
-
-	query, err := QueryFilterToGORM(filter)
-	if err != nil {
-		return 0, fmt.Errorf("failed to convert filter: %w", err)
-	}
-
-	if err := r.db.WithContext(ctx).Model(&UserModel{}).Scopes(query).Count(&count).Error; err != nil {
-		return 0, fmt.Errorf("failed to count users: %w", err)
-	}
-
-	return count, nil
-}
-
-// Exists verifica se existe alguma entidade que corresponde aos filtros
-func (r *Repository) Exists(ctx context.Context, filter shared.QueryFilter) (bool, error) {
-	count, err := r.Count(ctx, filter)
-	if err != nil {
-		return false, err
-	}
-
-	return count > 0, nil
-}
-
-// Sum soma valores de um campo específico
-func (r *Repository) Sum(ctx context.Context, field string, filter shared.QueryFilter) (float64, error) {
-	var result float64
-
-	query, err := QueryFilterToGORM(filter)
-	if err != nil {
-		return 0, fmt.Errorf("failed to convert filter: %w", err)
-	}
-
-	if err := r.db.WithContext(ctx).Model(&UserModel{}).Scopes(query).Select(fmt.Sprintf("SUM(%s)", field)).Scan(&result).Error; err != nil {
-		return 0, fmt.Errorf("failed to sum field %s: %w", field, err)
-	}
-
-	return result, nil
-}
-
-// Avg calcula a média de um campo
-func (r *Repository) Avg(ctx context.Context, field string, filter shared.QueryFilter) (float64, error) {
-	var result float64
-
-	query, err := QueryFilterToGORM(filter)
-	if err != nil {
-		return 0, fmt.Errorf("failed to convert filter: %w", err)
-	}
-
-	if err := r.db.WithContext(ctx).Model(&UserModel{}).Scopes(query).Select(fmt.Sprintf("AVG(%s)", field)).Scan(&result).Error; err != nil {
-		return 0, fmt.Errorf("failed to avg field %s: %w", field, err)
-	}
-
-	return result, nil
-}
-
-// Min retorna o valor mínimo de um campo
-func (r *Repository) Min(ctx context.Context, field string, filter shared.QueryFilter) (interface{}, error) {
-	var result interface{}
-
-	query, err := QueryFilterToGORM(filter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert filter: %w", err)
-	}
-
-	if err := r.db.WithContext(ctx).Model(&UserModel{}).Scopes(query).Select(fmt.Sprintf("MIN(%s)", field)).Scan(&result).Error; err != nil {
-		return nil, fmt.Errorf("failed to min field %s: %w", field, err)
-	}
-
-	return result, nil
-}
-
-// Max retorna o valor máximo de um campo
-func (r *Repository) Max(ctx context.Context, field string, filter shared.QueryFilter) (interface{}, error) {
-	var result interface{}
-
-	query, err := QueryFilterToGORM(filter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert filter: %w", err)
-	}
-
-	if err := r.db.WithContext(ctx).Model(&UserModel{}).Scopes(query).Select(fmt.Sprintf("MAX(%s)", field)).Scan(&result).Error; err != nil {
-		return nil, fmt.Errorf("failed to max field %s: %w", field, err)
-	}
-
-	return result, nil
-}
-
-// ==========================================
-// OPERAÇÕES EM LOTE
-// ==========================================
-
-// CreateMany cria múltiplas entidades de uma vez
-func (r *Repository) CreateMany(ctx context.Context, entities []*user.User) error {
-	if len(entities) == 0 {
-		return nil
-	}
-
-	models := ToModelSlice(entities)
-
-	if err := r.db.WithContext(ctx).CreateInBatches(models, 100).Error; err != nil {
-		return fmt.Errorf("failed to create users: %w", err)
-	}
-
-	return nil
-}
-
-// UpdateMany atualiza múltiplas entidades
-func (r *Repository) UpdateMany(ctx context.Context, filter shared.QueryFilter, updates map[string]interface{}) (int64, error) {
-	query, err := QueryFilterToGORM(filter)
-	if err != nil {
-		return 0, fmt.Errorf("failed to convert filter: %w", err)
-	}
-
-	// Adicionar timestamp de atualização
-	updates["updated_at"] = time.Now()
-
-	result := r.db.WithContext(ctx).Model(&UserModel{}).Scopes(query).Updates(updates)
-	if result.Error != nil {
-		return 0, fmt.Errorf("failed to update users: %w", result.Error)
-	}
-
-	return result.RowsAffected, nil
-}
-
-// DeleteMany remove múltiplas entidades
-func (r *Repository) DeleteMany(ctx context.Context, filter shared.QueryFilter) (int64, error) {
-	query, err := QueryFilterToGORM(filter)
-	if err != nil {
-		return 0, fmt.Errorf("failed to convert filter: %w", err)
-	}
-
-	result := r.db.WithContext(ctx).Scopes(query).Delete(&UserModel{})
-	if result.Error != nil {
-		return 0, fmt.Errorf("failed to delete users: %w", result.Error)
-	}
-
-	return result.RowsAffected, nil
-}
-
-// ==========================================
-// TRANSAÇÕES
+// MÉTODOS DE TRANSAÇÃO
 // ==========================================
 
 // WithTransaction executa uma função dentro de uma transação
-func (r *Repository) WithTransaction(ctx context.Context, fn func(ctx context.Context) error) error {
+func (r *Repository) WithTransaction(ctx context.Context, fn func(*Repository) error) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// Criar novo contexto com transação
-		txCtx := context.WithValue(ctx, "tx", tx)
-		return fn(txCtx)
+		txRepo := &Repository{
+			db:     tx,
+			logger: r.logger,
+		}
+		return fn(txRepo)
 	})
 }
 
 // ==========================================
-// QUERIES AVANÇADAS
+// MÉTODOS DE AGREGAÇÃO
 // ==========================================
 
-// FindFirst busca a primeira entidade que corresponde aos filtros
-func (r *Repository) FindFirst(ctx context.Context, filter shared.QueryFilter) (*user.User, error) {
-	var model UserModel
-
-	query, err := QueryFilterToGORM(filter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert filter: %w", err)
+// GetStats retorna estatísticas dos usuários
+func (r *Repository) GetStats(ctx context.Context) (*shared.AggregationResult, error) {
+	var stats struct {
+		Total     int64 `json:"total"`
+		Active    int64 `json:"active"`
+		Inactive  int64 `json:"inactive"`
+		Pending   int64 `json:"pending"`
+		Suspended int64 `json:"suspended"`
 	}
 
-	if err := r.db.WithContext(ctx).Scopes(query).First(&model).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, shared.NewDomainError("USER_NOT_FOUND", "user not found")
-		}
-		return nil, fmt.Errorf("failed to find first user: %w", err)
+	r.logger.Debug("Getting user statistics")
+
+	// Total de usuários
+	if err := r.db.WithContext(ctx).Model(&UserModel{}).Count(&stats.Total).Error; err != nil {
+		r.logger.Error("Failed to count total users", "error", err)
+		return nil, fmt.Errorf("failed to count total users: %w", err)
 	}
 
-	return ToDomain(&model)
-}
-
-// FindLast busca a última entidade que corresponde aos filtros
-func (r *Repository) FindLast(ctx context.Context, filter shared.QueryFilter) (*user.User, error) {
-	var model UserModel
-
-	query, err := QueryFilterToGORM(filter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert filter: %w", err)
-	}
-
-	if err := r.db.WithContext(ctx).Scopes(query).Last(&model).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, shared.NewDomainError("USER_NOT_FOUND", "user not found")
-		}
-		return nil, fmt.Errorf("failed to find last user: %w", err)
-	}
-
-	return ToDomain(&model)
-}
-
-// Distinct retorna valores únicos de um campo
-func (r *Repository) Distinct(ctx context.Context, field string, filter shared.QueryFilter) ([]interface{}, error) {
-	var results []interface{}
-
-	query, err := QueryFilterToGORM(filter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert filter: %w", err)
-	}
-
-	if err := r.db.WithContext(ctx).Model(&UserModel{}).Scopes(query).Distinct(field).Pluck(field, &results).Error; err != nil {
-		return nil, fmt.Errorf("failed to get distinct values for field %s: %w", field, err)
-	}
-
-	return results, nil
-}
-
-// GroupBy agrupa resultados por um campo
-func (r *Repository) GroupBy(ctx context.Context, field string, filter shared.QueryFilter) (map[string][]*user.User, error) {
+	// Usuários por status
+	statusCounts := make(map[string]int64)
 	var results []struct {
-		Group string `json:"group"`
-		UserModel
+		Status string `json:"status"`
+		Count  int64  `json:"count"`
 	}
 
+	if err := r.db.WithContext(ctx).
+		Model(&UserModel{}).
+		Select("status, COUNT(*) as count").
+		Group("status").
+		Scan(&results).Error; err != nil {
+		r.logger.Error("Failed to count users by status", "error", err)
+		return nil, fmt.Errorf("failed to count users by status: %w", err)
+	}
+
+	for _, result := range results {
+		statusCounts[result.Status] = result.Count
+	}
+
+	stats.Active = statusCounts["active"]
+	stats.Inactive = statusCounts["inactive"]
+	stats.Pending = statusCounts["pending"]
+	stats.Suspended = statusCounts["suspended"]
+
+	r.logger.Debug("User statistics retrieved",
+		"total", stats.Total,
+		"active", stats.Active,
+	)
+
+	return &shared.AggregationResult{
+		Count: stats.Total,
+	}, nil
+}
+
+// ==========================================
+// MÉTODOS AUXILIARES
+// ==========================================
+
+// applyFilter é um helper que aplica QueryFilter ao GORM
+func (r *Repository) applyFilter(db *gorm.DB, filter shared.QueryFilter) (*gorm.DB, error) {
 	query, err := QueryFilterToGORM(filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert filter: %w", err)
 	}
 
-	if err := r.db.WithContext(ctx).Model(&UserModel{}).Scopes(query).Select(field + " as group, *").Group(field).Find(&results).Error; err != nil {
-		return nil, fmt.Errorf("failed to group by field %s: %w", field, err)
+	return db.Scopes(query), nil
+}
+
+// ==========================================
+// MÉTODOS DE MANUTENÇÃO
+// ==========================================
+
+// CleanupExpiredTokens remove tokens expirados
+func (r *Repository) CleanupExpiredTokens(ctx context.Context) error {
+	r.logger.Debug("Cleaning up expired tokens")
+
+	now := time.Now()
+
+	// Limpar tokens de reset de senha expirados
+	if err := r.db.WithContext(ctx).
+		Model(&UserAuthDataModel{}).
+		Where("password_reset_expires < ?", now).
+		Updates(map[string]interface{}{
+			"password_reset_token":   nil,
+			"password_reset_expires": nil,
+		}).Error; err != nil {
+		r.logger.Error("Failed to cleanup password reset tokens", "error", err)
+		return fmt.Errorf("failed to cleanup password reset tokens: %w", err)
 	}
 
-	// Agrupar resultados
-	groups := make(map[string][]*user.User)
-	for _, result := range results {
-		user, err := ToDomain(&result.UserModel)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert user: %w", err)
-		}
-		groups[result.Group] = append(groups[result.Group], user)
+	// Limpar tokens de ativação expirados
+	if err := r.db.WithContext(ctx).
+		Model(&UserAuthDataModel{}).
+		Where("activation_expires < ?", now).
+		Updates(map[string]interface{}{
+			"activation_token":   nil,
+			"activation_expires": nil,
+		}).Error; err != nil {
+		r.logger.Error("Failed to cleanup activation tokens", "error", err)
+		return fmt.Errorf("failed to cleanup activation tokens: %w", err)
 	}
 
-	return groups, nil
+	// Limpar refresh tokens expirados
+	if err := r.db.WithContext(ctx).
+		Model(&UserAuthDataModel{}).
+		Where("refresh_expires < ?", now).
+		Updates(map[string]interface{}{
+			"refresh_token":      nil,
+			"refresh_expires":    nil,
+			"refresh_token_hash": nil,
+		}).Error; err != nil {
+		r.logger.Error("Failed to cleanup refresh tokens", "error", err)
+		return fmt.Errorf("failed to cleanup refresh tokens: %w", err)
+	}
+
+	r.logger.Info("Expired tokens cleaned up successfully")
+	return nil
 }

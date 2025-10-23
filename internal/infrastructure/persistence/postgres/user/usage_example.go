@@ -1,396 +1,251 @@
-// internal/infrastructure/persistence/postgres/user/usage_example.go
 package user
 
 import (
+	"context"
 	"fmt"
-	"strings"
-	"time"
+	"log"
 
-	"github.com/devleo-m/go-zero/internal/domain/shared"
+	"gorm.io/gorm"
 )
 
-// ExemploUsoRepository demonstra como usar o User Repository
-func ExemploUsoRepository() {
-	// Simulando contexto e banco
-	// ctx := context.Background()
-	// db := setupDatabase() // Na prática seria injetado
-	// userRepo := NewRepository(db)
+// Exemplo de uso da Infrastructure Layer
+// Este arquivo demonstra como usar o repository de usuários
 
-	fmt.Println("🚀 EXEMPLOS DE USO DO USER REPOSITORY")
-	fmt.Println(strings.Repeat("=", 50))
+func ExampleUsage() {
+	// Este é um exemplo de como usar a infrastructure layer
+	// Em produção, você teria as dependências reais injetadas
 
-	// ==========================================
-	// 1. CRUD BÁSICO
-	// ==========================================
-	fmt.Println("\n📝 1. CRUD BÁSICO")
+	// 1. Setup do banco (exemplo)
+	var db *gorm.DB
+	var logger Logger
+
+	// 2. Criar repository
+	_ = NewRepository(db, logger)
+
+	// 3. Exemplos de uso
+	_ = context.Background()
 
 	// Criar usuário
-	fmt.Println("   Criando usuário...")
-	// email, _ := user.NewEmail("joao@example.com")
-	// password, _ := user.NewPassword("senha123")
-	// role := user.RoleUser
-	// newUser, _ := user.NewUser("João Silva", email, password, role)
-	// err := userRepo.Create(ctx, newUser)
+	// user := &user.User{...}
+	// err := repo.Create(ctx, user)
 
 	// Buscar por ID
-	fmt.Println("   Buscando usuário por ID...")
-	// userID := uuid.New()
-	// foundUser, err := userRepo.FindByID(ctx, userID)
+	// foundUser, err := repo.FindByID(ctx, userID)
 
-	// Atualizar usuário
-	fmt.Println("   Atualizando usuário...")
-	// foundUser.Name = "João Silva Santos"
-	// err = userRepo.Update(ctx, foundUser.ID, foundUser)
+	// Buscar por email
+	// foundUser, err := repo.FindByEmail(ctx, "user@example.com")
 
-	// Deletar usuário (soft delete)
-	fmt.Println("   Deletando usuário...")
-	// err = userRepo.Delete(ctx, foundUser.ID)
+	// Buscar com filtros
+	// filter := shared.NewQueryBuilder().
+	//     WhereEqual("status", "active").
+	//     OrderByDesc("created_at").
+	//     Page(1).
+	//     PageSize(20).
+	//     Build()
+	// users, err := repo.FindMany(ctx, filter)
 
-	// ==========================================
-	// 2. QUERY BUILDER - FACILITA MUITO!
-	// ==========================================
-	fmt.Println("\n🔍 2. QUERY BUILDER")
+	// Queries específicas
+	// result, err := repo.FindActiveUsers(ctx, 1, 20)
+	// result, err := repo.FindUsersByRole(ctx, "admin", 1, 20)
+	// result, err := repo.SearchUsers(ctx, "João", 1, 20)
 
-	// Buscar usuários ativos
-	fmt.Println("   Buscando usuários ativos...")
-	activeFilter := shared.NewQueryBuilder().
-		WhereEqual("status", "active").
-		OrderByDesc("created_at").
-		Page(1).
-		PageSize(20).
-		Build()
-
-	// Buscar usuários por role
-	fmt.Println("   Buscando usuários por role...")
-	adminFilter := shared.NewQueryBuilder().
-		WhereEqual("role", "admin").
-		WhereEqual("status", "active").
-		OrderByAsc("name").
-		Build()
-
-	// Buscar usuários criados hoje
-	fmt.Println("   Buscando usuários criados hoje...")
-	todayFilter := shared.NewQueryBuilder().
-		CreatedToday().
-		OrderByDesc("created_at").
-		Build()
-
-	// Buscar usuários por nome (LIKE)
-	fmt.Println("   Buscando usuários por nome...")
-	searchFilter := shared.NewQueryBuilder().
-		WhereILike("name", "joão").
-		WhereEqual("status", "active").
-		Build()
-
-	// Buscar usuários com múltiplas condições
-	fmt.Println("   Buscando usuários com múltiplas condições...")
-	complexFilter := shared.NewQueryBuilder().
-		WhereEqual("status", "active").
-		WhereIn("role", []interface{}{"admin", "manager", "user"}).
-		WhereBetween("created_at", time.Now().AddDate(0, -1, 0), time.Now()).
-		OrderByDesc("created_at").
-		Page(1).
-		PageSize(50).
-		Build()
-
-	_ = activeFilter
-	_ = adminFilter
-	_ = todayFilter
-	_ = searchFilter
-	_ = complexFilter
-
-	// ==========================================
-	// 3. SPECIFICATION PATTERN - REUTILIZAÇÃO!
-	// ==========================================
-	fmt.Println("\n🎯 3. SPECIFICATION PATTERN")
-
-	// Usar especificações reutilizáveis
-	fmt.Println("   Usando especificações...")
-	// activeUsers := shared.ActiveSpecification[user.User]()
-	// adminUsers := shared.RoleSpecification[user.User]("admin")
-	// activeAdmins := activeUsers.And(adminUsers)
-
-	// Buscar com especificações
-	fmt.Println("   Buscando com especificações...")
-	// users, err := userRepo.FindMany(ctx, activeAdmins.ToQueryFilter())
-
-	// Combinar especificações
-	fmt.Println("   Combinando especificações...")
-	// thisWeek := shared.CreatedThisWeekSpecification[user.User]()
-	// activeThisWeek := activeUsers.And(thisWeek)
-	// users, err = userRepo.FindMany(ctx, activeThisWeek.ToQueryFilter())
-
-	// ==========================================
-	// 4. PAGINAÇÃO PROFISSIONAL
-	// ==========================================
-	fmt.Println("\n📄 4. PAGINAÇÃO PROFISSIONAL")
-
-	// Buscar com paginação
-	fmt.Println("   Buscando com paginação...")
-	paginatedFilter := shared.NewQueryBuilder().
-		WhereEqual("status", "active").
-		OrderByDesc("created_at").
-		Page(2).
-		PageSize(20).
-		Build()
-
-	// result, err := userRepo.Paginate(ctx, paginatedFilter)
-	// if err == nil {
-	//     fmt.Printf("   Página %d de %d (Total: %d usuários)\n",
-	//         result.Pagination.CurrentPage,
-	//         result.Pagination.TotalPages,
-	//         result.Pagination.TotalItems)
-	//     fmt.Printf("   Itens na página: %d\n", result.Pagination.ItemsInPage)
-	//     fmt.Printf("   Tem página anterior: %v\n", result.Pagination.HasPrevious)
-	//     fmt.Printf("   Tem próxima página: %v\n", result.Pagination.HasNext)
-	// }
-
-	_ = paginatedFilter
-
-	// ==========================================
-	// 5. AGREGAÇÕES E ESTATÍSTICAS
-	// ==========================================
-	fmt.Println("\n📊 5. AGREGAÇÕES E ESTATÍSTICAS")
-
-	// Contar usuários
-	fmt.Println("   Contando usuários...")
-	// count, err := userRepo.Count(ctx, shared.QueryFilter{
-	//     Where: []shared.Condition{
-	//         {Field: "status", Operator: shared.OpEqual, Value: "active"},
-	//     },
+	// Transações
+	// err := repo.WithTransaction(ctx, func(txRepo *Repository) error {
+	//     // Operações dentro da transação
+	//     return nil
 	// })
 
-	// Verificar se existe
-	fmt.Println("   Verificando se existe...")
-	// exists, err := userRepo.Exists(ctx, shared.QueryFilter{
-	//     Where: []shared.Condition{
-	//         {Field: "email", Operator: shared.OpEqual, Value: "joao@example.com"},
-	//     },
-	// })
+	// Estatísticas
+	// stats, err := repo.GetStats(ctx)
 
-	// Estatísticas completas
-	fmt.Println("   Obtendo estatísticas...")
-	// stats, err := userRepo.GetUserStats(ctx)
-	// if err == nil {
-	//     fmt.Printf("   Total de usuários: %d\n", stats.TotalUsers)
-	//     fmt.Printf("   Usuários ativos: %d\n", stats.ActiveUsers)
-	//     fmt.Printf("   Usuários inativos: %d\n", stats.InactiveUsers)
-	//     fmt.Printf("   Usuários pendentes: %d\n", stats.PendingUsers)
-	//     fmt.Printf("   Usuários criados hoje: %d\n", stats.UsersCreatedToday)
-	// }
+	// Manutenção
+	// err := repo.CleanupExpiredTokens(ctx)
 
-	// ==========================================
-	// 6. OPERAÇÕES EM LOTE
-	// ==========================================
-	fmt.Println("\n🔄 6. OPERAÇÕES EM LOTE")
-
-	// Update em lote
-	fmt.Println("   Atualizando usuários em lote...")
-	// affected, err := userRepo.UpdateMany(ctx,
-	//     shared.QueryFilter{
-	//         Where: []shared.Condition{
-	//             {Field: "status", Operator: shared.OpEqual, Value: "pending"},
-	//         },
-	//     },
-	//     map[string]interface{}{
-	//         "status": "active",
-	//     },
-	// )
-	// fmt.Printf("   %d usuários foram ativados\n", affected)
-
-	// Delete em lote
-	fmt.Println("   Deletando usuários em lote...")
-	// cutoffDate := time.Now().AddDate(0, -6, 0) // 6 meses atrás
-	// affected, err = userRepo.DeleteMany(ctx, shared.QueryFilter{
-	//     Where: []shared.Condition{
-	//         {Field: "created_at", Operator: shared.OpLessThan, Value: cutoffDate},
-	//         {Field: "status", Operator: shared.OpEqual, Value: "inactive"},
-	//     },
-	// })
-	// fmt.Printf("   %d usuários foram removidos\n", affected)
-
-	// ==========================================
-	// 7. TRANSAÇÕES
-	// ==========================================
-	fmt.Println("\n💼 7. TRANSAÇÕES")
-
-	// Executar em transação
-	fmt.Println("   Executando transação...")
-	// err = userRepo.WithTransaction(ctx, func(ctx context.Context) error {
-	//     // Criar usuário
-	//     // if err := userRepo.Create(ctx, user1); err != nil {
-	//     //     return err // Rollback automático
-	//     // }
-	//
-	//     // Atualizar usuário
-	//     // if err := userRepo.Update(ctx, user2.ID, user2); err != nil {
-	//     //     return err // Rollback automático
-	//     // }
-	//
-	//     return nil // Commit automático
-	// })
-
-	// ==========================================
-	// 8. QUERIES ESPECÍFICAS OTIMIZADAS
-	// ==========================================
-	fmt.Println("\n⚡ 8. QUERIES ESPECÍFICAS")
-
-	// Buscar por email (otimizada)
-	fmt.Println("   Buscando por email...")
-	// user, err := userRepo.FindByEmail(ctx, "joao@example.com")
-
-	// Buscar por telefone (otimizada)
-	fmt.Println("   Buscando por telefone...")
-	// user, err = userRepo.FindByPhone(ctx, "+5511999999999")
-
-	// Buscar usuários ativos (otimizada)
-	fmt.Println("   Buscando usuários ativos...")
-	// users, err := userRepo.FindActiveUsers(ctx)
-
-	// Buscar usuários pendentes
-	fmt.Println("   Buscando usuários pendentes...")
-	// users, err = userRepo.FindPendingActivation(ctx)
-
-	// Buscar por token de reset
-	fmt.Println("   Buscando por token de reset...")
-	// user, err = userRepo.FindByPasswordResetToken(ctx, "token123")
-
-	// Buscar por token de ativação
-	fmt.Println("   Buscando por token de ativação...")
-	// user, err = userRepo.FindByActivationToken(ctx, "token456")
-
-	// Buscar usuários sem login
-	fmt.Println("   Buscando usuários sem login...")
-	// users, err = userRepo.FindUsersWithoutLogin(ctx)
-
-	// Buscar usuários por período
-	fmt.Println("   Buscando usuários por período...")
-	// start := time.Now().AddDate(0, -1, 0) // 1 mês atrás
-	// end := time.Now()
-	// users, err = userRepo.FindUsersByDateRange(ctx, start, end)
-
-	// Buscar usuários por último login
-	fmt.Println("   Buscando usuários por último login...")
-	// users, err = userRepo.FindUsersByLastLogin(ctx, 30) // 30 dias
-
-	// Buscar usuários por texto
-	fmt.Println("   Buscando usuários por texto...")
-	// users, err = userRepo.SearchUsers(ctx, "joão", 10)
-
-	// ==========================================
-	// 9. QUERIES AVANÇADAS
-	// ==========================================
-	fmt.Println("\n🔬 9. QUERIES AVANÇADAS")
-
-	// Distinct - roles únicos
-	fmt.Println("   Buscando roles únicos...")
-	// roles, err := userRepo.Distinct(ctx, "role", shared.QueryFilter{})
-
-	// GroupBy - agrupar por role
-	fmt.Println("   Agrupando por role...")
-	// groups, err := userRepo.GroupBy(ctx, "role", shared.QueryFilter{})
-
-	// FindFirst - primeiro usuário
-	fmt.Println("   Buscando primeiro usuário...")
-	// firstUser, err := userRepo.FindFirst(ctx, shared.QueryFilter{
-	//     OrderBy: []shared.OrderBy{
-	//         {Field: "created_at", Order: shared.SortAsc},
-	//     },
-	// })
-
-	// FindLast - último usuário
-	fmt.Println("   Buscando último usuário...")
-	// lastUser, err := userRepo.FindLast(ctx, shared.QueryFilter{
-	//     OrderBy: []shared.OrderBy{
-	//         {Field: "created_at", Order: shared.SortDesc},
-	//     },
-	// })
-
-	// ==========================================
-	// 10. MANUTENÇÃO E LIMPEZA
-	// ==========================================
-	fmt.Println("\n🧹 10. MANUTENÇÃO E LIMPEZA")
-
-	// Limpar tokens expirados
-	fmt.Println("   Limpando tokens expirados...")
-	// affected, err := userRepo.CleanExpiredTokens(ctx)
-	// fmt.Printf("   %d tokens foram limpos\n", affected)
-
-	// Buscar tokens expirados
-	fmt.Println("   Buscando tokens expirados...")
-	// users, err := userRepo.FindExpiredTokens(ctx)
-
-	fmt.Println("\n✅ Exemplos concluídos com sucesso!")
+	log.Println("Exemplo de uso da infrastructure layer")
 }
 
-// ExemploComparacaoAntesDepois demonstra a diferença entre os padrões
-func ExemploComparacaoAntesDepois() {
-	fmt.Println("\n" + strings.Repeat("=", 60))
-	fmt.Println("📊 COMPARAÇÃO: ANTES vs AGORA")
-	fmt.Println(strings.Repeat("=", 60))
+// MockLogger implementa a interface Logger para testes
+type MockLogger struct{}
 
-	fmt.Println("\n❌ ANTES (Repository específico):")
-	fmt.Println(`
-type UserRepository interface {
-    FindByEmail(ctx context.Context, email string) (*User, error)
-    FindByPhone(ctx context.Context, phone string) (*User, error)
-    FindByRole(ctx context.Context, role Role) ([]*User, error)
-    FindByStatus(ctx context.Context, status Status) ([]*User, error)
-    FindActiveUsers(ctx context.Context) ([]*User, error)
-    FindInactiveUsers(ctx context.Context) ([]*User, error)
-    FindByCreatedAtBetween(ctx context.Context, start, end time.Time) ([]*User, error)
-    FindByRoleIn(ctx context.Context, roles []Role) ([]*User, error)
-    FindByNameLike(ctx context.Context, name string) ([]*User, error)
-    // ... 50+ métodos específicos
-}`)
-
-	fmt.Println("\n✅ AGORA (Repository genérico + QueryBuilder + Specification):")
-	fmt.Println(`
-type Repository[T any] interface {
-    Create(ctx context.Context, entity T) error
-    FindOne(ctx context.Context, filter QueryFilter) (T, error)
-    FindMany(ctx context.Context, filter QueryFilter) ([]T, error)
-    Update(ctx context.Context, id uuid.UUID, entity T) error
-    Delete(ctx context.Context, id uuid.UUID) error
-    Paginate(ctx context.Context, filter QueryFilter) (*PaginatedResult[T], error)
-    Count(ctx context.Context, filter QueryFilter) (int64, error)
-    Exists(ctx context.Context, filter QueryFilter) (bool, error)
-    // ... poucos métodos poderosos
+func (m *MockLogger) Debug(msg string, fields ...interface{}) {
+	log.Printf("[DEBUG] %s %v", msg, fields)
 }
 
-// QueryBuilder - Fácil e legível
-filter := NewQueryBuilder().
-    WhereEqual("status", "active").
-    WhereIn("role", []interface{}{"admin", "user"}).
-    OrderByDesc("created_at").
-    Page(1).
-    PageSize(20).
-    Build()
-
-// Specification - Reutilizável
-activeAdmins := ActiveAdminsSpecification[User]()
-users, err := repo.FindMany(ctx, activeAdmins.ToQueryFilter())
-`)
-
-	fmt.Println("\n🎯 VANTAGENS DO PADRÃO ATUAL:")
-	fmt.Println("✅ Interface enxuta (10 métodos vs 50+)")
-	fmt.Println("✅ 100% flexível (qualquer busca possível)")
-	fmt.Println("✅ Fácil de manter")
-	fmt.Println("✅ Padrão da indústria")
-	fmt.Println("✅ Type-safe com Go Generics")
-	fmt.Println("✅ Reutilizável para TODAS entidades")
-	fmt.Println("✅ Paginação profissional inclusa")
-	fmt.Println("✅ Agregações poderosas")
-	fmt.Println("✅ Transações simples")
-	fmt.Println("✅ QueryBuilder facilita uso")
-	fmt.Println("✅ Specification reutiliza regras")
-	fmt.Println("✅ Performance otimizada com índices")
-	fmt.Println("✅ Conversões seguras Domain ↔ Model")
-	fmt.Println("✅ Hooks GORM para validações")
-	fmt.Println("✅ Queries específicas otimizadas")
+func (m *MockLogger) Info(msg string, fields ...interface{}) {
+	log.Printf("[INFO] %s %v", msg, fields)
 }
 
-func main() {
-	ExemploUsoRepository()
-	ExemploComparacaoAntesDepois()
+func (m *MockLogger) Warn(msg string, fields ...interface{}) {
+	log.Printf("[WARN] %s %v", msg, fields)
+}
+
+func (m *MockLogger) Error(msg string, fields ...interface{}) {
+	log.Printf("[ERROR] %s %v", msg, fields)
+}
+
+// Exemplo de teste unitário
+func ExampleTest() {
+	// Setup de teste
+	_ = &MockLogger{}
+
+	// Em um teste real, você usaria um banco de teste
+	// db := setupTestDB()
+	// repo := NewRepository(db, mockLogger)
+
+	// Testes de CRUD
+	// TestCreateUser(t, repo)
+	// TestFindUserByID(t, repo)
+	// TestFindUserByEmail(t, repo)
+	// TestUpdateUser(t, repo)
+	// TestDeleteUser(t, repo)
+
+	// Testes de queries
+	// TestFindActiveUsers(t, repo)
+	// TestSearchUsers(t, repo)
+	// TestGetStats(t, repo)
+
+	log.Println("Exemplo de teste da infrastructure layer")
+}
+
+// Exemplo de migração do banco
+func ExampleMigration() {
+	// SQL para criar as tabelas
+	sql := `
+-- Tabela principal de usuários
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    deleted_at TIMESTAMP,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    phone VARCHAR(20),
+    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    role VARCHAR(50) NOT NULL DEFAULT 'user'
+);
+
+-- Índices
+CREATE INDEX idx_users_created_at ON users(created_at);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_status ON users(status);
+CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_users_deleted_at ON users(deleted_at);
+
+-- Tabela de perfil
+CREATE TABLE user_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    deleted_at TIMESTAMP,
+    user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    email_verified_at TIMESTAMP,
+    last_login_at TIMESTAMP,
+    login_count INTEGER DEFAULT 0 NOT NULL,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    avatar_url VARCHAR(500),
+    bio TEXT,
+    location VARCHAR(255),
+    website VARCHAR(500)
+);
+
+-- Tabela de dados de autenticação
+CREATE TABLE user_auth_data (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    deleted_at TIMESTAMP,
+    user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    password_reset_token VARCHAR(255) UNIQUE,
+    password_reset_expires TIMESTAMP,
+    activation_token VARCHAR(255) UNIQUE,
+    activation_expires TIMESTAMP,
+    two_factor_secret VARCHAR(255),
+    two_factor_enabled BOOLEAN DEFAULT false NOT NULL,
+    two_factor_backup_codes TEXT,
+    refresh_token VARCHAR(500) UNIQUE,
+    refresh_expires TIMESTAMP,
+    refresh_token_hash VARCHAR(255),
+    last_password_change TIMESTAMP,
+    failed_login_attempts INTEGER DEFAULT 0 NOT NULL,
+    locked_until TIMESTAMP
+);
+
+-- Tabela de preferências
+CREATE TABLE user_preferences (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    deleted_at TIMESTAMP,
+    user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    timezone VARCHAR(50) DEFAULT 'UTC',
+    language VARCHAR(10) DEFAULT 'pt-BR',
+    currency VARCHAR(3) DEFAULT 'BRL',
+    email_notifications BOOLEAN DEFAULT true NOT NULL,
+    sms_notifications BOOLEAN DEFAULT false NOT NULL,
+    push_notifications BOOLEAN DEFAULT true NOT NULL,
+    marketing_emails BOOLEAN DEFAULT false NOT NULL,
+    security_alerts BOOLEAN DEFAULT true NOT NULL,
+    appointment_reminders BOOLEAN DEFAULT true NOT NULL,
+    newsletter_subscription BOOLEAN DEFAULT false NOT NULL,
+    profile_visibility VARCHAR(20) DEFAULT 'private' NOT NULL,
+    show_email BOOLEAN DEFAULT false NOT NULL,
+    show_phone BOOLEAN DEFAULT false NOT NULL,
+    show_last_login BOOLEAN DEFAULT false NOT NULL,
+    theme VARCHAR(20) DEFAULT 'light' NOT NULL,
+    date_format VARCHAR(20) DEFAULT 'DD/MM/YYYY' NOT NULL,
+    time_format VARCHAR(10) DEFAULT '24h' NOT NULL,
+    items_per_page INTEGER DEFAULT 20 NOT NULL,
+    auto_save_drafts BOOLEAN DEFAULT true NOT NULL,
+    show_tutorials BOOLEAN DEFAULT true NOT NULL,
+    high_contrast BOOLEAN DEFAULT false NOT NULL,
+    large_text BOOLEAN DEFAULT false NOT NULL,
+    screen_reader BOOLEAN DEFAULT false NOT NULL,
+    keyboard_nav BOOLEAN DEFAULT false NOT NULL,
+    reduced_motion BOOLEAN DEFAULT false NOT NULL
+);
+`
+
+	log.Println("SQL de migração:")
+	fmt.Println(sql)
+}
+
+// Exemplo de configuração do GORM
+func ExampleGORMConfig() {
+	// Configuração recomendada do GORM
+	config := &gorm.Config{
+		// NamingStrategy: schema.NamingStrategy{
+		//     TablePrefix:   "app_",
+		//     SingularTable: false,
+		// },
+		// Logger: logger.Default.LogMode(logger.Info),
+		// NowFunc: func() time.Time {
+		//     return time.Now().UTC()
+		// },
+		// DisableForeignKeyConstraintWhenMigrating: true,
+		// PrepareStmt: true,
+	}
+
+	log.Printf("Configuração do GORM: %+v", config)
+}
+
+// Exemplo de métricas
+func ExampleMetrics() {
+	// Métricas recomendadas para monitoramento
+	metrics := map[string]string{
+		"user_operations_total":       "Total de operações por tipo",
+		"user_query_duration_seconds": "Tempo de queries",
+		"user_cache_hits_total":       "Cache hits (se implementado)",
+		"user_errors_total":           "Erros por tipo",
+		"user_active_count":           "Usuários ativos",
+		"user_registrations_total":    "Total de registros",
+		"user_logins_total":           "Total de logins",
+		"user_password_resets_total":  "Total de resets de senha",
+	}
+
+	log.Println("Métricas recomendadas:")
+	for metric, description := range metrics {
+		log.Printf("- %s: %s", metric, description)
+	}
 }

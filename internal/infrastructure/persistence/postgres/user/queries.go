@@ -1,421 +1,382 @@
-// internal/infrastructure/persistence/postgres/user/queries.go
 package user
 
 import (
 	"context"
+	"fmt"
 	"time"
+
+	"gorm.io/gorm"
 
 	"github.com/devleo-m/go-zero/internal/domain/shared"
 	"github.com/devleo-m/go-zero/internal/domain/user"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 // ==========================================
-// QUERIES ESPECÍFICAS OTIMIZADAS
+// QUERIES ESPECÍFICAS SEMPRE PAGINADAS
 // ==========================================
 
-// FindByEmail busca usuário por email (otimizada com índice)
-func (r *Repository) FindByEmail(ctx context.Context, email string) (*user.User, error) {
-	var model UserModel
+// FindActiveUsers busca usuários ativos com paginação
+func (r *Repository) FindActiveUsers(ctx context.Context, page, pageSize int) (*shared.PaginatedResult[*user.User], error) {
+	filter := shared.NewQueryBuilder().
+		WhereEqual("status", "active").
+		OrderByDesc("created_at").
+		Page(page).
+		PageSize(pageSize).
+		Build()
+
+	r.logger.Debug("Finding active users", "page", page, "pageSize", pageSize)
+	return r.Paginate(ctx, filter)
+}
+
+// FindUsersByRole busca usuários por role com paginação
+func (r *Repository) FindUsersByRole(ctx context.Context, role string, page, pageSize int) (*shared.PaginatedResult[*user.User], error) {
+	filter := shared.NewQueryBuilder().
+		WhereEqual("role", role).
+		OrderByDesc("created_at").
+		Page(page).
+		PageSize(pageSize).
+		Build()
+
+	r.logger.Debug("Finding users by role", "role", role, "page", page, "pageSize", pageSize)
+	return r.Paginate(ctx, filter)
+}
+
+// FindUsersByStatus busca usuários por status com paginação
+func (r *Repository) FindUsersByStatus(ctx context.Context, status string, page, pageSize int) (*shared.PaginatedResult[*user.User], error) {
+	filter := shared.NewQueryBuilder().
+		WhereEqual("status", status).
+		OrderByDesc("created_at").
+		Page(page).
+		PageSize(pageSize).
+		Build()
+
+	r.logger.Debug("Finding users by status", "status", status, "page", page, "pageSize", pageSize)
+	return r.Paginate(ctx, filter)
+}
+
+// FindUsersCreatedAfter busca usuários criados após uma data com paginação
+func (r *Repository) FindUsersCreatedAfter(ctx context.Context, after time.Time, page, pageSize int) (*shared.PaginatedResult[*user.User], error) {
+	filter := shared.NewQueryBuilder().
+		WhereGreaterThan("created_at", after).
+		OrderByDesc("created_at").
+		Page(page).
+		PageSize(pageSize).
+		Build()
+
+	r.logger.Debug("Finding users created after", "after", after, "page", page, "pageSize", pageSize)
+	return r.Paginate(ctx, filter)
+}
+
+// FindUsersByEmailDomain busca usuários por domínio de email com paginação
+func (r *Repository) FindUsersByEmailDomain(ctx context.Context, domain string, page, pageSize int) (*shared.PaginatedResult[*user.User], error) {
+	filter := shared.NewQueryBuilder().
+		WhereLike("email", "%@"+domain).
+		OrderByDesc("created_at").
+		Page(page).
+		PageSize(pageSize).
+		Build()
+
+	r.logger.Debug("Finding users by email domain", "domain", domain, "page", page, "pageSize", pageSize)
+	return r.Paginate(ctx, filter)
+}
+
+// SearchUsers busca usuários por termo de busca com paginação
+func (r *Repository) SearchUsers(ctx context.Context, searchTerm string, page, pageSize int) (*shared.PaginatedResult[*user.User], error) {
+	filter := shared.NewQueryBuilder().
+		WhereLike("name", searchTerm).
+		OrderByDesc("created_at").
+		Page(page).
+		PageSize(pageSize).
+		Build()
+
+	r.logger.Debug("Searching users", "searchTerm", searchTerm, "page", page, "pageSize", pageSize)
+	return r.Paginate(ctx, filter)
+}
+
+// ==========================================
+// QUERIES DE AUTENTICAÇÃO
+// ==========================================
+
+// FindByPasswordResetToken busca usuário por token de reset de senha
+func (r *Repository) FindByPasswordResetToken(ctx context.Context, token string) (*user.User, error) {
+	var authData UserAuthDataModel
+
+	r.logger.Debug("Finding user by password reset token")
 
 	if err := r.db.WithContext(ctx).
-		Where("email = ?", email).
-		First(&model).Error; err != nil {
+		Where("password_reset_token = ? AND password_reset_expires > ?", token, time.Now()).
+		First(&authData).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, shared.NewDomainError("USER_NOT_FOUND", "user not found")
+			r.logger.Debug("User not found by password reset token")
+			return nil, nil
 		}
-		return nil, err
+
+		r.logger.Error("Failed to find user by password reset token", "error", err)
+		return nil, fmt.Errorf("failed to find user by password reset token: %w", err)
 	}
 
-	return ToDomain(&model)
+	// Buscar o usuário principal
+	return r.FindByID(ctx, authData.UserID)
 }
 
-// FindByPhone busca usuário por telefone (otimizada com índice)
-func (r *Repository) FindByPhone(ctx context.Context, phone string) (*user.User, error) {
-	var model UserModel
+// FindByActivationToken busca usuário por token de ativação
+func (r *Repository) FindByActivationToken(ctx context.Context, token string) (*user.User, error) {
+	var authData UserAuthDataModel
+
+	r.logger.Debug("Finding user by activation token")
 
 	if err := r.db.WithContext(ctx).
-		Where("phone = ?", phone).
-		First(&model).Error; err != nil {
+		Where("activation_token = ? AND activation_expires > ?", token, time.Now()).
+		First(&authData).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, shared.NewDomainError("USER_NOT_FOUND", "user not found")
+			r.logger.Debug("User not found by activation token")
+			return nil, nil
 		}
-		return nil, err
+
+		r.logger.Error("Failed to find user by activation token", "error", err)
+		return nil, fmt.Errorf("failed to find user by activation token: %w", err)
 	}
 
-	return ToDomain(&model)
+	// Buscar o usuário principal
+	return r.FindByID(ctx, authData.UserID)
 }
 
-// FindByStatus busca usuários por status (otimizada com índice)
-func (r *Repository) FindByStatus(ctx context.Context, status string) ([]*user.User, error) {
-	var models []*UserModel
+// FindByRefreshToken busca usuário por refresh token
+func (r *Repository) FindByRefreshToken(ctx context.Context, token string) (*user.User, error) {
+	var authData UserAuthDataModel
+
+	r.logger.Debug("Finding user by refresh token")
 
 	if err := r.db.WithContext(ctx).
-		Where("status = ?", status).
-		Order("created_at DESC").
-		Find(&models).Error; err != nil {
-		return nil, err
+		Where("refresh_token = ? AND refresh_expires > ?", token, time.Now()).
+		First(&authData).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			r.logger.Debug("User not found by refresh token")
+			return nil, nil
+		}
+
+		r.logger.Error("Failed to find user by refresh token", "error", err)
+		return nil, fmt.Errorf("failed to find user by refresh token: %w", err)
 	}
 
-	return ToDomainSlice(models)
-}
-
-// FindByRole busca usuários por role (otimizada com índice)
-func (r *Repository) FindByRole(ctx context.Context, role string) ([]*user.User, error) {
-	var models []*UserModel
-
-	if err := r.db.WithContext(ctx).
-		Where("role = ?", role).
-		Order("created_at DESC").
-		Find(&models).Error; err != nil {
-		return nil, err
-	}
-
-	return ToDomainSlice(models)
-}
-
-// FindActiveUsers busca usuários ativos (otimizada)
-func (r *Repository) FindActiveUsers(ctx context.Context) ([]*user.User, error) {
-	var models []*UserModel
-
-	if err := r.db.WithContext(ctx).
-		Where("status = ?", "active").
-		Order("created_at DESC").
-		Find(&models).Error; err != nil {
-		return nil, err
-	}
-
-	return ToDomainSlice(models)
-}
-
-// FindPendingActivation busca usuários pendentes de ativação
-func (r *Repository) FindPendingActivation(ctx context.Context) ([]*user.User, error) {
-	var models []*UserModel
-
-	if err := r.db.WithContext(ctx).
-		Where("status = ? AND activation_token IS NOT NULL", "pending").
-		Order("created_at ASC").
-		Find(&models).Error; err != nil {
-		return nil, err
-	}
-
-	return ToDomainSlice(models)
+	// Buscar o usuário principal
+	return r.FindByID(ctx, authData.UserID)
 }
 
 // ==========================================
 // QUERIES DE ESTATÍSTICAS
 // ==========================================
 
-// GetUserStats retorna estatísticas de usuários
-func (r *Repository) GetUserStats(ctx context.Context) (*UserStats, error) {
-	var stats UserStats
-
-	// Total de usuários
-	if err := r.db.WithContext(ctx).Model(&UserModel{}).Count(&stats.TotalUsers).Error; err != nil {
-		return nil, err
+// GetUserStatsByPeriod retorna estatísticas de usuários por período
+func (r *Repository) GetUserStatsByPeriod(ctx context.Context, start, end time.Time) (*shared.AggregationResult, error) {
+	var stats struct {
+		TotalCreated   int64 `json:"total_created"`
+		TotalActive    int64 `json:"total_active"`
+		TotalInactive  int64 `json:"total_inactive"`
+		TotalPending   int64 `json:"total_pending"`
+		TotalSuspended int64 `json:"total_suspended"`
+		NewUsers       int64 `json:"new_users"`
+		ReturningUsers int64 `json:"returning_users"`
 	}
 
-	// Usuários ativos
-	if err := r.db.WithContext(ctx).Model(&UserModel{}).Where("status = ?", "active").Count(&stats.ActiveUsers).Error; err != nil {
-		return nil, err
+	r.logger.Debug("Getting user stats by period", "start", start, "end", end)
+
+	// Total de usuários criados no período
+	if err := r.db.WithContext(ctx).
+		Model(&UserModel{}).
+		Where("created_at BETWEEN ? AND ?", start, end).
+		Count(&stats.TotalCreated).Error; err != nil {
+		r.logger.Error("Failed to count users created in period", "error", err)
+		return nil, fmt.Errorf("failed to count users created in period: %w", err)
 	}
 
-	// Usuários inativos
-	if err := r.db.WithContext(ctx).Model(&UserModel{}).Where("status = ?", "inactive").Count(&stats.InactiveUsers).Error; err != nil {
-		return nil, err
+	// Usuários por status no período
+	statusCounts := make(map[string]int64)
+	var results []struct {
+		Status string `json:"status"`
+		Count  int64  `json:"count"`
 	}
-
-	// Usuários pendentes
-	if err := r.db.WithContext(ctx).Model(&UserModel{}).Where("status = ?", "pending").Count(&stats.PendingUsers).Error; err != nil {
-		return nil, err
-	}
-
-	// Usuários suspensos
-	if err := r.db.WithContext(ctx).Model(&UserModel{}).Where("status = ?", "suspended").Count(&stats.SuspendedUsers).Error; err != nil {
-		return nil, err
-	}
-
-	// Usuários por role
-	if err := r.db.WithContext(ctx).Model(&UserModel{}).
-		Select("role, COUNT(*) as count").
-		Group("role").
-		Scan(&stats.UsersByRole).Error; err != nil {
-		return nil, err
-	}
-
-	// Usuários criados hoje
-	today := time.Now().Truncate(24 * time.Hour)
-	if err := r.db.WithContext(ctx).Model(&UserModel{}).
-		Where("created_at >= ?", today).
-		Count(&stats.UsersCreatedToday).Error; err != nil {
-		return nil, err
-	}
-
-	// Usuários criados esta semana
-	weekStart := today.AddDate(0, 0, -int(today.Weekday()))
-	if err := r.db.WithContext(ctx).Model(&UserModel{}).
-		Where("created_at >= ?", weekStart).
-		Count(&stats.UsersCreatedThisWeek).Error; err != nil {
-		return nil, err
-	}
-
-	// Usuários criados este mês
-	monthStart := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, today.Location())
-	if err := r.db.WithContext(ctx).Model(&UserModel{}).
-		Where("created_at >= ?", monthStart).
-		Count(&stats.UsersCreatedThisMonth).Error; err != nil {
-		return nil, err
-	}
-
-	// Usuários com email verificado
-	if err := r.db.WithContext(ctx).Model(&UserModel{}).
-		Where("email_verified_at IS NOT NULL").
-		Count(&stats.VerifiedUsers).Error; err != nil {
-		return nil, err
-	}
-
-	// Usuários com 2FA habilitado
-	if err := r.db.WithContext(ctx).Model(&UserModel{}).
-		Where("two_factor_enabled = ?", true).
-		Count(&stats.TwoFactorUsers).Error; err != nil {
-		return nil, err
-	}
-
-	return &stats, nil
-}
-
-// UserStats representa estatísticas de usuários
-type UserStats struct {
-	TotalUsers            int64 `json:"total_users"`
-	ActiveUsers           int64 `json:"active_users"`
-	InactiveUsers         int64 `json:"inactive_users"`
-	PendingUsers          int64 `json:"pending_users"`
-	SuspendedUsers        int64 `json:"suspended_users"`
-	VerifiedUsers         int64 `json:"verified_users"`
-	TwoFactorUsers        int64 `json:"two_factor_users"`
-	UsersCreatedToday     int64 `json:"users_created_today"`
-	UsersCreatedThisWeek  int64 `json:"users_created_this_week"`
-	UsersCreatedThisMonth int64 `json:"users_created_this_month"`
-	UsersByRole           []struct {
-		Role  string `json:"role"`
-		Count int64  `json:"count"`
-	} `json:"users_by_role"`
-}
-
-// ==========================================
-// QUERIES DE BUSCA E FILTROS
-// ==========================================
-
-// SearchUsers busca usuários por texto (nome, email)
-func (r *Repository) SearchUsers(ctx context.Context, query string, limit int) ([]*user.User, error) {
-	var models []*UserModel
-
-	searchQuery := "%" + query + "%"
 
 	if err := r.db.WithContext(ctx).
-		Where("name ILIKE ? OR email ILIKE ?", searchQuery, searchQuery).
-		Order("created_at DESC").
+		Model(&UserModel{}).
+		Select("status, COUNT(*) as count").
+		Where("created_at BETWEEN ? AND ?", start, end).
+		Group("status").
+		Scan(&results).Error; err != nil {
+		r.logger.Error("Failed to count users by status in period", "error", err)
+		return nil, fmt.Errorf("failed to count users by status in period: %w", err)
+	}
+
+	for _, result := range results {
+		statusCounts[result.Status] = result.Count
+	}
+
+	stats.TotalActive = statusCounts["active"]
+	stats.TotalInactive = statusCounts["inactive"]
+	stats.TotalPending = statusCounts["pending"]
+	stats.TotalSuspended = statusCounts["suspended"]
+
+	// Usuários que fizeram login no período (aproximação)
+	if err := r.db.WithContext(ctx).
+		Model(&UserProfileModel{}).
+		Where("last_login_at BETWEEN ? AND ?", start, end).
+		Count(&stats.ReturningUsers).Error; err != nil {
+		r.logger.Error("Failed to count returning users", "error", err)
+		return nil, fmt.Errorf("failed to count returning users: %w", err)
+	}
+
+	// Novos usuários (criados no período)
+	stats.NewUsers = stats.TotalCreated
+
+	r.logger.Debug("User stats by period retrieved",
+		"total_created", stats.TotalCreated,
+		"new_users", stats.NewUsers,
+		"returning_users", stats.ReturningUsers,
+	)
+
+	return &shared.AggregationResult{
+		Count: stats.TotalCreated,
+	}, nil
+}
+
+// GetTopUsersByActivity retorna usuários mais ativos
+func (r *Repository) GetTopUsersByActivity(ctx context.Context, limit int) ([]*user.User, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+
+	var models []*UserModel
+
+	r.logger.Debug("Getting top users by activity", "limit", limit)
+
+	if err := r.db.WithContext(ctx).
+		Table("users u").
+		Select("u.*").
+		Joins("LEFT JOIN user_profiles p ON u.id = p.user_id").
+		Order("p.login_count DESC, u.created_at DESC").
 		Limit(limit).
 		Find(&models).Error; err != nil {
-		return nil, err
+		r.logger.Error("Failed to get top users by activity", "error", err)
+		return nil, fmt.Errorf("failed to get top users by activity: %w", err)
 	}
 
-	return ToDomainSlice(models)
-}
-
-// FindUsersByDateRange busca usuários criados em um período
-func (r *Repository) FindUsersByDateRange(ctx context.Context, start, end time.Time) ([]*user.User, error) {
-	var models []*UserModel
-
-	if err := r.db.WithContext(ctx).
-		Where("created_at BETWEEN ? AND ?", start, end).
-		Order("created_at DESC").
-		Find(&models).Error; err != nil {
-		return nil, err
+	users, err := ToDomainSlice(models)
+	if err != nil {
+		r.logger.Error("Failed to convert top users to domain", "error", err)
+		return nil, fmt.Errorf("failed to convert top users to domain: %w", err)
 	}
 
-	return ToDomainSlice(models)
-}
-
-// FindUsersByLastLogin busca usuários por último login
-func (r *Repository) FindUsersByLastLogin(ctx context.Context, days int) ([]*user.User, error) {
-	var models []*UserModel
-
-	cutoff := time.Now().AddDate(0, 0, -days)
-
-	if err := r.db.WithContext(ctx).
-		Where("last_login_at < ?", cutoff).
-		Order("last_login_at ASC").
-		Find(&models).Error; err != nil {
-		return nil, err
-	}
-
-	return ToDomainSlice(models)
-}
-
-// FindUsersWithoutLogin busca usuários que nunca fizeram login
-func (r *Repository) FindUsersWithoutLogin(ctx context.Context) ([]*user.User, error) {
-	var models []*UserModel
-
-	if err := r.db.WithContext(ctx).
-		Where("last_login_at IS NULL").
-		Order("created_at DESC").
-		Find(&models).Error; err != nil {
-		return nil, err
-	}
-
-	return ToDomainSlice(models)
+	r.logger.Debug("Top users by activity retrieved", "count", len(users))
+	return users, nil
 }
 
 // ==========================================
-// QUERIES DE TOKENS E RECUPERAÇÃO
+// QUERIES DE MANUTENÇÃO
 // ==========================================
 
-// FindByPasswordResetToken busca usuário por token de reset
-func (r *Repository) FindByPasswordResetToken(ctx context.Context, token string) (*user.User, error) {
-	var model UserModel
+// FindInactiveUsers busca usuários inativos há mais de X dias
+func (r *Repository) FindInactiveUsers(ctx context.Context, days int, page, pageSize int) (*shared.PaginatedResult[*user.User], error) {
+	cutoffDate := time.Now().AddDate(0, 0, -days)
 
-	if err := r.db.WithContext(ctx).
-		Where("password_reset_token = ? AND password_reset_expires > ?", token, time.Now()).
-		First(&model).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, shared.NewDomainError("INVALID_TOKEN", "invalid or expired token")
-		}
-		return nil, err
-	}
+	filter := shared.NewQueryBuilder().
+		WhereEqual("status", "inactive").
+		WhereLessThan("updated_at", cutoffDate).
+		OrderByDesc("updated_at").
+		Page(page).
+		PageSize(pageSize).
+		Build()
 
-	return ToDomain(&model)
+	r.logger.Debug("Finding inactive users", "days", days, "cutoff", cutoffDate, "page", page, "pageSize", pageSize)
+	return r.Paginate(ctx, filter)
 }
 
-// FindByActivationToken busca usuário por token de ativação
-func (r *Repository) FindByActivationToken(ctx context.Context, token string) (*user.User, error) {
-	var model UserModel
-
-	if err := r.db.WithContext(ctx).
-		Where("activation_token = ? AND activation_expires > ?", token, time.Now()).
-		First(&model).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, shared.NewDomainError("INVALID_TOKEN", "invalid or expired token")
-		}
-		return nil, err
-	}
-
-	return ToDomain(&model)
-}
-
-// ==========================================
-// QUERIES DE AUDITORIA
-// ==========================================
-
-// FindUsersCreatedBy busca usuários criados por um usuário específico
-func (r *Repository) FindUsersCreatedBy(ctx context.Context, createdBy uuid.UUID) ([]*user.User, error) {
+// FindUsersWithoutProfile busca usuários sem perfil completo
+func (r *Repository) FindUsersWithoutProfile(ctx context.Context, page, pageSize int) (*shared.PaginatedResult[*user.User], error) {
 	var models []*UserModel
 
-	if err := r.db.WithContext(ctx).
-		Where("created_by = ?", createdBy).
-		Order("created_at DESC").
-		Find(&models).Error; err != nil {
-		return nil, err
-	}
+	r.logger.Debug("Finding users without profile", "page", page, "pageSize", pageSize)
 
-	return ToDomainSlice(models)
-}
-
-// FindUsersUpdatedBy busca usuários atualizados por um usuário específico
-func (r *Repository) FindUsersUpdatedBy(ctx context.Context, updatedBy uuid.UUID) ([]*user.User, error) {
-	var models []*UserModel
-
-	if err := r.db.WithContext(ctx).
-		Where("updated_by = ?", updatedBy).
-		Order("updated_at DESC").
-		Find(&models).Error; err != nil {
-		return nil, err
-	}
-
-	return ToDomainSlice(models)
-}
-
-// ==========================================
-// QUERIES DE PERFORMANCE
-// ==========================================
-
-// FindUsersWithPagination busca usuários com paginação otimizada
-func (r *Repository) FindUsersWithPagination(ctx context.Context, page, pageSize int, filters map[string]interface{}) (*shared.PaginatedResult[*user.User], error) {
-	var models []*UserModel
-	var total int64
-
-	// Construir query base
-	query := r.db.WithContext(ctx).Model(&UserModel{})
-
-	// Aplicar filtros
-	for field, value := range filters {
-		query = query.Where(field+" = ?", value)
-	}
-
-	// Contar total
-	if err := query.Count(&total).Error; err != nil {
-		return nil, err
-	}
-
-	// Buscar registros
 	offset := (page - 1) * pageSize
-	if err := query.
-		Order("created_at DESC").
+	if page <= 0 {
+		offset = 0
+	}
+
+	if err := r.db.WithContext(ctx).
+		Table("users u").
+		Select("u.*").
+		Joins("LEFT JOIN user_profiles p ON u.id = p.user_id").
+		Where("p.user_id IS NULL").
+		Order("u.created_at DESC").
 		Offset(offset).
 		Limit(pageSize).
 		Find(&models).Error; err != nil {
-		return nil, err
+		r.logger.Error("Failed to find users without profile", "error", err)
+		return nil, fmt.Errorf("failed to find users without profile: %w", err)
 	}
 
-	// Converter para domínio
 	users, err := ToDomainSlice(models)
 	if err != nil {
-		return nil, err
+		r.logger.Error("Failed to convert users to domain", "error", err)
+		return nil, fmt.Errorf("failed to convert users to domain: %w", err)
 	}
 
-	// Criar resultado paginado
-	result := shared.NewPaginatedResult(users, total, page, pageSize)
+	// Contar total para paginação
+	var total int64
+	if err := r.db.WithContext(ctx).
+		Table("users u").
+		Joins("LEFT JOIN user_profiles p ON u.id = p.user_id").
+		Where("p.user_id IS NULL").
+		Count(&total).Error; err != nil {
+		r.logger.Error("Failed to count users without profile", "error", err)
+		return nil, fmt.Errorf("failed to count users without profile: %w", err)
+	}
 
-	return result, nil
+	// Calcular metadados de paginação
+	totalPages := int((total + int64(pageSize) - 1) / int64(pageSize))
+	hasNext := page < totalPages
+	hasPrev := page > 1
+
+	return &shared.PaginatedResult[*user.User]{
+		Data: users,
+		Pagination: shared.PaginationMeta{
+			CurrentPage: page,
+			TotalPages:  totalPages,
+			PageSize:    pageSize,
+			TotalItems:  total,
+			ItemsInPage: len(users),
+			HasNext:     hasNext,
+			HasPrevious: hasPrev,
+		},
+	}, nil
 }
 
 // ==========================================
-// QUERIES DE LIMPEZA E MANUTENÇÃO
+// QUERIES DE RELATÓRIOS
 // ==========================================
 
-// FindExpiredTokens busca tokens expirados para limpeza
-func (r *Repository) FindExpiredTokens(ctx context.Context) ([]*user.User, error) {
-	var models []*UserModel
+// GetUserGrowthReport retorna relatório de crescimento de usuários
+func (r *Repository) GetUserGrowthReport(ctx context.Context, start, end time.Time, groupBy string) (*shared.AggregationResult, error) {
+	var results []struct {
+		Date  string `json:"date"`
+		Count int64  `json:"count"`
+	}
 
-	now := time.Now()
+	r.logger.Debug("Getting user growth report", "start", start, "end", end, "groupBy", groupBy)
 
 	if err := r.db.WithContext(ctx).
-		Where("(password_reset_token IS NOT NULL AND password_reset_expires < ?) OR (activation_token IS NOT NULL AND activation_expires < ?)", now, now).
-		Find(&models).Error; err != nil {
-		return nil, err
-	}
-
-	return ToDomainSlice(models)
-}
-
-// CleanExpiredTokens limpa tokens expirados
-func (r *Repository) CleanExpiredTokens(ctx context.Context) (int64, error) {
-	now := time.Now()
-
-	result := r.db.WithContext(ctx).
 		Model(&UserModel{}).
-		Where("(password_reset_token IS NOT NULL AND password_reset_expires < ?) OR (activation_token IS NOT NULL AND activation_expires < ?)", now, now).
-		Updates(map[string]interface{}{
-			"password_reset_token":   nil,
-			"password_reset_expires": nil,
-			"activation_token":       nil,
-			"activation_expires":     nil,
-		})
-
-	if result.Error != nil {
-		return 0, result.Error
+		Select(fmt.Sprintf("DATE_TRUNC('%s', created_at) as date, COUNT(*) as count", groupBy)).
+		Where("created_at BETWEEN ? AND ?", start, end).
+		Group("date").
+		Order("date").
+		Scan(&results).Error; err != nil {
+		r.logger.Error("Failed to get user growth report", "error", err)
+		return nil, fmt.Errorf("failed to get user growth report: %w", err)
 	}
 
-	return result.RowsAffected, nil
+	r.logger.Debug("User growth report retrieved", "data_points", len(results))
+
+	return &shared.AggregationResult{
+		Count: int64(len(results)),
+	}, nil
 }
