@@ -219,5 +219,106 @@ info: ## Mostra informações do projeto
 	@echo "  make seed-users              # Executa seed de usuários"
 	@echo "  make dev-setup               # Setup completo (migrate + seed)"
 
+# Comandos de desenvolvimento
+dev-setup-full: ## Setup completo do ambiente (deps + migrate + seed)
+	@echo "$(BLUE)🚀 Setup completo do ambiente...$(NC)"
+	@make install-deps
+	@make docker-up
+	@sleep 10
+	@make migrate-up
+	@make seed
+	@echo "$(GREEN)✅ Ambiente completo configurado!$(NC)"
+
+install-deps: ## Instala todas as dependências e ferramentas
+	@echo "$(BLUE)📦 Instalando dependências...$(NC)"
+	@go mod download
+	@go mod tidy
+	@make install-tools
+
+check-deps: ## Verifica se todas as dependências estão instaladas
+	@echo "$(BLUE)🔍 Verificando dependências...$(NC)"
+	@which air > /dev/null || (echo "$(RED)❌ Air não instalado$(NC)" && exit 1)
+	@which golangci-lint > /dev/null || (echo "$(RED)❌ golangci-lint não instalado$(NC)" && exit 1)
+	@which migrate > /dev/null || (echo "$(RED)❌ migrate não instalado$(NC)" && exit 1)
+	@echo "$(GREEN)✅ Todas as dependências estão instaladas$(NC)"
+
+# Comandos de desenvolvimento
+dev-logs: ## Mostra logs da aplicação em desenvolvimento
+	@echo "$(BLUE)📋 Logs da aplicação...$(NC)"
+	@docker-compose logs -f app
+
+dev-restart: ## Reinicia apenas a aplicação
+	@echo "$(BLUE)🔄 Reiniciando aplicação...$(NC)"
+	@docker-compose restart app
+
+# Comandos de banco
+db-reset: ## Reseta completamente o banco (CUIDADO!)
+	@echo "$(RED)⚠️  Resetando banco de dados...$(NC)"
+	@make docker-down
+	@docker volume rm go-zero_postgres_data 2>/dev/null || true
+	@make docker-up
+	@sleep 10
+	@make migrate-up
+	@make seed
+	@echo "$(GREEN)✅ Banco resetado e populado$(NC)"
+
+# Comandos de teste
+test-watch: ## Executa testes em modo watch
+	@echo "$(BLUE)👀 Executando testes em modo watch...$(NC)"
+	@air -c .air.test.toml
+
+# Comandos de documentação
+docs-serve: ## Serve documentação localmente
+	@echo "$(BLUE)📚 Servindo documentação...$(NC)"
+	@swag init -g cmd/api/main.go -o docs/swagger
+	@echo "$(GREEN)✅ Documentação disponível em /swagger$(NC)"
+
+# Comandos de monitoramento
+logs-all: ## Mostra logs de todos os serviços
+	@echo "$(BLUE)📋 Logs de todos os serviços...$(NC)"
+	@docker-compose logs -f
+
+logs-db: ## Mostra logs do banco de dados
+	@echo "$(BLUE)📋 Logs do banco de dados...$(NC)"
+	@docker-compose logs -f db
+
+logs-redis: ## Mostra logs do Redis
+	@echo "$(BLUE)📋 Logs do Redis...$(NC)"
+	@docker-compose logs -f redis
+
+# Comandos de limpeza
+clean-all: ## Limpa tudo (containers, volumes, imagens)
+	@echo "$(BLUE)🧹 Limpando tudo...$(NC)"
+	@make docker-down
+	@docker system prune -f
+	@docker volume prune -f
+	@make clean
+	@echo "$(GREEN)✅ Limpeza completa realizada$(NC)"
+
+# Comandos de status
+status: ## Mostra status dos serviços
+	@echo "$(BLUE)📊 Status dos serviços...$(NC)"
+	@docker-compose ps
+
+health: ## Verifica saúde dos serviços
+	@echo "$(BLUE)🏥 Verificando saúde dos serviços...$(NC)"
+	@curl -s http://localhost:8080/health || echo "$(RED)❌ API não está respondendo$(NC)"
+	@docker-compose ps | grep -q "Up" && echo "$(GREEN)✅ Serviços estão rodando$(NC)" || echo "$(RED)❌ Alguns serviços estão parados$(NC)"
+
+# Comandos de backup
+backup-db: ## Faz backup do banco de dados
+	@echo "$(BLUE)💾 Fazendo backup do banco...$(NC)"
+	@docker-compose exec -T db pg_dump -U postgres go_zero > backup_$(shell date +%Y%m%d_%H%M%S).sql
+	@echo "$(GREEN)✅ Backup criado$(NC)"
+
+# Comandos de desenvolvimento avançado
+dev-shell: ## Abre shell no container da aplicação
+	@echo "$(BLUE)🐚 Abrindo shell no container...$(NC)"
+	@docker-compose exec app sh
+
+dev-db-shell: ## Abre shell no banco de dados
+	@echo "$(BLUE)🐚 Abrindo shell no banco...$(NC)"
+	@docker-compose exec db psql -U postgres -d go_zero
+
 # Comando padrão
 .DEFAULT_GOAL := help

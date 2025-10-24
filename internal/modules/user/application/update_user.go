@@ -24,7 +24,7 @@ func NewUpdateUserUseCase(userRepo domain.Repository) *UpdateUserUseCase {
 type UpdateUserInput struct {
 	ID    uuid.UUID `json:"id" validate:"required"`
 	Name  string    `json:"name" validate:"required,min=2,max=100"`
-	Phone string    `json:"phone,omitempty"`
+	Phone *string   `json:"phone,omitempty"`
 }
 
 // UpdateUserOutput representa os dados de saída
@@ -42,12 +42,7 @@ func (uc *UpdateUserUseCase) Execute(ctx context.Context, input UpdateUserInput)
 	}
 
 	// Atualizar perfil
-	var phone *string
-	if input.Phone != "" {
-		phone = &input.Phone
-	}
-
-	if err := user.UpdateProfile(input.Name, phone); err != nil {
+	if err := user.UpdateProfile(input.Name, input.Phone); err != nil {
 		return nil, fmt.Errorf("failed to update profile: %w", err)
 	}
 

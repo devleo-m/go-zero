@@ -2,31 +2,64 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"github.com/devleo-m/go-zero/internal/infrastructure"
+	"github.com/devleo-m/go-zero/internal/infrastructure/config"
+	"github.com/devleo-m/go-zero/internal/infrastructure/http/middleware"
+	"github.com/devleo-m/go-zero/internal/infrastructure/http/routes"
+	"github.com/devleo-m/go-zero/internal/infrastructure/logger"
 	userApp "github.com/devleo-m/go-zero/internal/modules/user/application"
 	userRepo "github.com/devleo-m/go-zero/internal/modules/user/infrastructure/postgres"
 	userHttp "github.com/devleo-m/go-zero/internal/modules/user/presentation/http"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 func main() {
+	// Carregar configurações
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal("Failed to load config:", err)
+	}
+
+	// Configurar logger
+	appLogger, err := logger.NewFromEnv()
+	if err != nil {
+		log.Fatal("Failed to initialize logger:", err)
+	}
+	defer appLogger.Sync()
+
+	appLogger.Info("Starting GO ZERO API",
+		zap.String("app_name", cfg.App.Name),
+		zap.String("version", cfg.App.Version),
+		zap.String("environment", cfg.App.Env),
+	)
+
 	// Configurar Gin
-	gin.SetMode(gin.ReleaseMode)
-	router := gin.Default()
+	if cfg.App.Env == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	} else {
+		gin.SetMode(gin.DebugMode)
+	}
 
 	// Conectar ao banco de dados
-	dsn := os.Getenv("DATABASE_URL")
+	dsn := cfg.Database.URL
 	if dsn == "" {
-		dsn = "host=localhost user=postgres password=postgres dbname=go_zero port=5432 sslmode=disable"
+		dsn = buildDatabaseURL(cfg.Database)
 	}
 
 	db, err := infrastructure.NewDatabase(dsn)
 	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+		appLogger.Fatal("Failed to connect to database",
+			zap.Error(err),
+			zap.String("component", "database"),
+		)
 	}
 	defer db.Close()
+
+	appLogger.Info("Database connected successfully",
+		zap.String("component", "database"),
+	)
 
 	// Configurar repositórios
 	userRepository := userRepo.NewRepository(db.DB)
@@ -47,22 +80,51 @@ func main() {
 		deleteUserUseCase,
 	)
 
-	// Configurar rotas
-	userHttp.SetupRoutes(router, userHandler)
+	// Configurar rate limiter
+	rateLimiter := middleware.NewRateLimiter(cfg.RateLimit.Requests, cfg.RateLimit.Window)
 
-	// Rota de health check
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok"})
-	})
+	// Configurar rotas
+	router := gin.New()
+	routesConfig := &routes.Config{
+		JWT: routes.JWTConfig{
+			Secret: cfg.JWT.Secret,
+		},
+		CORS: routes.CORSConfig{
+			AllowedOrigins: cfg.CORS.AllowedOrigins,
+			AllowedMethods: cfg.CORS.AllowedMethods,
+			AllowedHeaders: cfg.CORS.AllowedHeaders,
+		},
+		RateLimiter: rateLimiter,
+		UserHandler: userHandler,
+	}
+
+	routes.SetupRoutes(router, routesConfig)
 
 	// Iniciar servidor
-	port := os.Getenv("PORT")
+	port := cfg.App.Port
 	if port == "" {
 		port = "8080"
 	}
 
-	log.Printf("Server starting on port %s", port)
+	appLogger.Info("Server starting",
+		zap.String("port", port),
+		zap.String("component", "server"),
+	)
+
 	if err := router.Run(":" + port); err != nil {
-		log.Fatal("Failed to start server:", err)
+		appLogger.Fatal("Failed to start server",
+			zap.Error(err),
+			zap.String("component", "server"),
+		)
 	}
+}
+
+// buildDatabaseURL constrói a URL do banco de dados
+func buildDatabaseURL(dbCfg config.DatabaseConfig) string {
+	return "host=" + dbCfg.Host +
+		" user=" + dbCfg.User +
+		" password=" + dbCfg.Password +
+		" dbname=" + dbCfg.Name +
+		" port=" + dbCfg.Port +
+		" sslmode=" + dbCfg.SSLMode
 }

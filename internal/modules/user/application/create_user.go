@@ -21,10 +21,10 @@ func NewCreateUserUseCase(userRepo domain.Repository) *CreateUserUseCase {
 
 // CreateUserInput representa os dados de entrada
 type CreateUserInput struct {
-	Name     string `json:"name" validate:"required,min=2,max=100"`
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=6"`
-	Phone    string `json:"phone,omitempty"`
+	Name     string  `json:"name" validate:"required,min=2,max=100"`
+	Email    string  `json:"email" validate:"required,email"`
+	Password string  `json:"password" validate:"required,min=6"`
+	Phone    *string `json:"phone,omitempty"`
 }
 
 // CreateUserOutput representa os dados de saída
@@ -51,8 +51,8 @@ func (uc *CreateUserUseCase) Execute(ctx context.Context, input CreateUserInput)
 	}
 
 	// Definir telefone se fornecido
-	if input.Phone != "" {
-		user.Phone = &input.Phone
+	if input.Phone != nil {
+		user.Phone = input.Phone
 	}
 
 	// Salvar no banco
