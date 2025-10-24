@@ -30,7 +30,7 @@ func NewUser(name, email, password string) (*User, error) {
 	if email == "" {
 		return nil, ErrInvalidEmail
 	}
-	if password == "" || len(password) < 6 {
+	if password == "" || len(password) < 8 {
 		return nil, ErrInvalidPassword
 	}
 
@@ -60,7 +60,7 @@ func (u *User) ValidatePassword(password string) error {
 
 // UpdatePassword atualiza a senha do usuário
 func (u *User) UpdatePassword(newPassword string) error {
-	if newPassword == "" || len(newPassword) < 6 {
+	if newPassword == "" || len(newPassword) < 8 {
 		return ErrInvalidPassword
 	}
 

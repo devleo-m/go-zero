@@ -41,13 +41,20 @@ func (uc *ListUsersUseCase) Execute(ctx context.Context, input ListUsersInput) (
 		input.Offset = 0
 	}
 
+	// Buscar usuários
 	users, err := uc.userRepo.List(ctx, input.Limit, input.Offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list users: %w", err)
 	}
 
+	// Buscar total real de usuários
+	total, err := uc.userRepo.Count(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count users: %w", err)
+	}
+
 	return &ListUsersOutput{
 		Users: users,
-		Total: len(users),
+		Total: int(total), // Total real da tabela
 	}, nil
 }

@@ -33,11 +33,13 @@ func (r *Repository) Create(ctx context.Context, user *domain.User) error {
 	return nil
 }
 
-// GetByID busca um usuário por ID
+// GetByID busca um usuário por ID (excluindo deletados)
 func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	var model UserModel
 
-	if err := r.db.WithContext(ctx).First(&model, "id = ?", id).Error; err != nil {
+	if err := r.db.WithContext(ctx).
+		Where("id = ? AND deleted_at IS NULL", id).
+		First(&model).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, domain.ErrUserNotFound
 		}
@@ -47,11 +49,13 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, e
 	return toDomain(&model), nil
 }
 
-// GetByEmail busca um usuário por email
+// GetByEmail busca um usuário por email (excluindo deletados)
 func (r *Repository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var model UserModel
 
-	if err := r.db.WithContext(ctx).First(&model, "email = ?", email).Error; err != nil {
+	if err := r.db.WithContext(ctx).
+		Where("email = ? AND deleted_at IS NULL", email).
+		First(&model).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, domain.ErrUserNotFound
 		}
@@ -61,11 +65,12 @@ func (r *Repository) GetByEmail(ctx context.Context, email string) (*domain.User
 	return toDomain(&model), nil
 }
 
-// List lista usuários com paginação
+// List lista usuários com paginação (excluindo deletados)
 func (r *Repository) List(ctx context.Context, limit, offset int) ([]*domain.User, error) {
 	var models []UserModel
 
 	if err := r.db.WithContext(ctx).
+		Where("deleted_at IS NULL").
 		Limit(limit).
 		Offset(offset).
 		Find(&models).Error; err != nil {
@@ -78,6 +83,18 @@ func (r *Repository) List(ctx context.Context, limit, offset int) ([]*domain.Use
 	}
 
 	return users, nil
+}
+
+// Count conta o total de usuários (excluindo deletados)
+func (r *Repository) Count(ctx context.Context) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&UserModel{}).
+		Where("deleted_at IS NULL").
+		Count(&count).Error
+	if err != nil {
+		return 0, fmt.Errorf("failed to count users: %w", err)
+	}
+	return count, nil
 }
 
 // Update atualiza um usuário
@@ -93,10 +110,13 @@ func (r *Repository) Update(ctx context.Context, user *domain.User) error {
 
 // Delete deleta um usuário (soft delete)
 func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
-	if err := r.db.WithContext(ctx).Delete(&UserModel{}, "id = ?", id).Error; err != nil {
+	now := time.Now()
+	err := r.db.WithContext(ctx).Model(&UserModel{}).
+		Where("id = ?", id).
+		Update("deleted_at", now).Error
+	if err != nil {
 		return fmt.Errorf("failed to delete user: %w", err)
 	}
-
 	return nil
 }
 

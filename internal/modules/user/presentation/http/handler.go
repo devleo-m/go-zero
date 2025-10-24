@@ -45,28 +45,9 @@ func (h *Handler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	// Validar dados de entrada
-	if err := validation.ValidateName(req.Name); err != nil {
-		response.BadRequest(c, "INVALID_NAME", err.Error())
-		return
-	}
-
-	if err := validation.ValidateEmail(req.Email); err != nil {
-		response.BadRequest(c, "INVALID_EMAIL", err.Error())
-		return
-	}
-
-	if err := validation.ValidatePassword(req.Password); err != nil {
-		response.BadRequest(c, "INVALID_PASSWORD", err.Error())
-		return
-	}
-
+	// Apenas sanitização - validação já feita pelo gin binding
 	var phone *string
 	if req.Phone != "" {
-		if err := validation.ValidatePhone(req.Phone); err != nil {
-			response.BadRequest(c, "INVALID_PHONE", err.Error())
-			return
-		}
 		phone = &req.Phone
 	}
 
@@ -146,8 +127,8 @@ func (h *Handler) ListUsers(c *gin.Context) {
 		users[i] = toUserResponse(user)
 	}
 
-	// Usar sistema de paginação
-	page := offset/limit + 1
+	// Calcular página corretamente
+	page := (offset / limit) + 1
 	meta := response.NewMeta(page, limit, int64(result.Total))
 
 	response.Paginated(c, map[string]interface{}{
@@ -169,18 +150,9 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	// Validar dados de entrada
-	if err := validation.ValidateName(req.Name); err != nil {
-		response.BadRequest(c, "INVALID_NAME", err.Error())
-		return
-	}
-
+	// Apenas sanitização - validação já feita pelo gin binding
 	var phone *string
 	if req.Phone != "" {
-		if err := validation.ValidatePhone(req.Phone); err != nil {
-			response.BadRequest(c, "INVALID_PHONE", err.Error())
-			return
-		}
 		phone = &req.Phone
 	}
 
