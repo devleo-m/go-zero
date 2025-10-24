@@ -1,11 +1,12 @@
 package http
 
 import (
-	"net/http"
 	"strconv"
 
 	"github.com/devleo-m/go-zero/internal/modules/user/application"
 	"github.com/devleo-m/go-zero/internal/modules/user/domain"
+	"github.com/devleo-m/go-zero/internal/shared/response"
+	"github.com/devleo-m/go-zero/internal/shared/validation"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -40,67 +41,53 @@ func NewHandler(
 func (h *Handler) CreateUser(c *gin.Context) {
 	var req CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error:   "INVALID_REQUEST",
-			Message: err.Error(),
-		})
+		response.BadRequest(c, "INVALID_REQUEST", err.Error())
 		return
 	}
 
+	// Apenas sanitização - validação já feita pelo gin binding
+	var phone *string
+	if req.Phone != "" {
+		phone = &req.Phone
+	}
+
 	input := application.CreateUserInput{
-		Name:     req.Name,
-		Email:    req.Email,
+		Name:     validation.SanitizeString(req.Name),
+		Email:    validation.SanitizeString(req.Email),
 		Password: req.Password,
-		Phone:    req.Phone,
+		Phone:    phone,
 	}
 
 	result, err := h.createUserUseCase.Execute(c.Request.Context(), input)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error:   "CREATE_USER_FAILED",
-			Message: err.Error(),
-		})
+		response.BadRequest(c, "CREATE_USER_FAILED", err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, SuccessResponse{
-		Message: result.Message,
-		Data:    toUserResponse(result.User),
-	})
+	response.Created(c, toUserResponse(result.User), result.Message)
 }
 
 // GetUser busca um usuário por ID
 func (h *Handler) GetUser(c *gin.Context) {
 	idStr := c.Param("id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error:   "INVALID_ID",
-			Message: "Invalid user ID",
-		})
+	if err := validation.ValidateUUID(idStr); err != nil {
+		response.BadRequest(c, "INVALID_ID", err.Error())
 		return
 	}
 
+	id, _ := uuid.Parse(idStr)
 	input := application.GetUserInput{ID: id}
 	result, err := h.getUserUseCase.Execute(c.Request.Context(), input)
 	if err != nil {
 		if err == domain.ErrUserNotFound {
-			c.JSON(http.StatusNotFound, ErrorResponse{
-				Error:   "USER_NOT_FOUND",
-				Message: "User not found",
-			})
+			response.NotFound(c, "USER_NOT_FOUND", "User not found")
 			return
 		}
-		c.JSON(http.StatusInternalServerError, ErrorResponse{
-			Error:   "GET_USER_FAILED",
-			Message: err.Error(),
-		})
+		response.InternalServerError(c, "GET_USER_FAILED", err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, SuccessResponse{
-		Data: toUserResponse(result.User),
-	})
+	response.Success(c, toUserResponse(result.User))
 }
 
 // ListUsers lista usuários
@@ -118,6 +105,12 @@ func (h *Handler) ListUsers(c *gin.Context) {
 		offset = 0
 	}
 
+	// Validar parâmetros de paginação
+	if err := validation.ValidatePagination(offset/limit+1, limit); err != nil {
+		response.BadRequest(c, "INVALID_PAGINATION", err.Error())
+		return
+	}
+
 	input := application.ListUsersInput{
 		Limit:  limit,
 		Offset: offset,
@@ -125,10 +118,7 @@ func (h *Handler) ListUsers(c *gin.Context) {
 
 	result, err := h.listUsersUseCase.Execute(c.Request.Context(), input)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{
-			Error:   "LIST_USERS_FAILED",
-			Message: err.Error(),
-		})
+		response.InternalServerError(c, "LIST_USERS_FAILED", err.Error())
 		return
 	}
 
@@ -137,95 +127,76 @@ func (h *Handler) ListUsers(c *gin.Context) {
 		users[i] = toUserResponse(user)
 	}
 
-	c.JSON(http.StatusOK, SuccessResponse{
-		Data: map[string]interface{}{
-			"users": users,
-			"total": result.Total,
-		},
-	})
+	// Calcular página corretamente
+	page := (offset / limit) + 1
+	meta := response.NewMeta(page, limit, int64(result.Total))
+
+	response.Paginated(c, map[string]interface{}{
+		"users": users,
+	}, meta)
 }
 
 // UpdateUser atualiza um usuário
 func (h *Handler) UpdateUser(c *gin.Context) {
 	idStr := c.Param("id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error:   "INVALID_ID",
-			Message: "Invalid user ID",
-		})
+	if err := validation.ValidateUUID(idStr); err != nil {
+		response.BadRequest(c, "INVALID_ID", err.Error())
 		return
 	}
 
 	var req UpdateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error:   "INVALID_REQUEST",
-			Message: err.Error(),
-		})
+		response.BadRequest(c, "INVALID_REQUEST", err.Error())
 		return
 	}
 
+	// Apenas sanitização - validação já feita pelo gin binding
+	var phone *string
+	if req.Phone != "" {
+		phone = &req.Phone
+	}
+
+	id, _ := uuid.Parse(idStr)
 	input := application.UpdateUserInput{
 		ID:    id,
-		Name:  req.Name,
-		Phone: req.Phone,
+		Name:  validation.SanitizeString(req.Name),
+		Phone: phone,
 	}
 
 	result, err := h.updateUserUseCase.Execute(c.Request.Context(), input)
 	if err != nil {
 		if err == domain.ErrUserNotFound {
-			c.JSON(http.StatusNotFound, ErrorResponse{
-				Error:   "USER_NOT_FOUND",
-				Message: "User not found",
-			})
+			response.NotFound(c, "USER_NOT_FOUND", "User not found")
 			return
 		}
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error:   "UPDATE_USER_FAILED",
-			Message: err.Error(),
-		})
+		response.BadRequest(c, "UPDATE_USER_FAILED", err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, SuccessResponse{
-		Message: result.Message,
-		Data:    toUserResponse(result.User),
-	})
+	response.Success(c, toUserResponse(result.User), result.Message)
 }
 
 // DeleteUser deleta um usuário
 func (h *Handler) DeleteUser(c *gin.Context) {
 	idStr := c.Param("id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error:   "INVALID_ID",
-			Message: "Invalid user ID",
-		})
+	if err := validation.ValidateUUID(idStr); err != nil {
+		response.BadRequest(c, "INVALID_ID", err.Error())
 		return
 	}
 
+	id, _ := uuid.Parse(idStr)
 	input := application.DeleteUserInput{ID: id}
 	result, err := h.deleteUserUseCase.Execute(c.Request.Context(), input)
 	if err != nil {
 		if err == domain.ErrUserNotFound {
-			c.JSON(http.StatusNotFound, ErrorResponse{
-				Error:   "USER_NOT_FOUND",
-				Message: "User not found",
-			})
+			response.NotFound(c, "USER_NOT_FOUND", "User not found")
 			return
 		}
-		c.JSON(http.StatusInternalServerError, ErrorResponse{
-			Error:   "DELETE_USER_FAILED",
-			Message: err.Error(),
-		})
+		response.InternalServerError(c, "DELETE_USER_FAILED", err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, SuccessResponse{
-		Message: result.Message,
-	})
+	response.Success(c, nil, result.Message)
 }
 
 // toUserResponse converte domain.User para UserResponse
