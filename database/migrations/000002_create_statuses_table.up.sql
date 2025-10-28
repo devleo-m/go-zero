@@ -1,6 +1,6 @@
 -- Migration: Create Statuses Table
 -- Description: Create statuses lookup table for user status
--- Author: GO ZERO Project
+-- Author: devleo-m
 
 -- Create statuses table
 CREATE TABLE statuses (

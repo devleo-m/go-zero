@@ -1,6 +1,6 @@
 -- Migration: Create States Table
 -- Description: Create states lookup table for user location
--- Author: GO ZERO Project
+-- Author: devleo-m
 
 -- Create states table
 CREATE TABLE states (

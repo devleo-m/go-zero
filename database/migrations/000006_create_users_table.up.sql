@@ -1,6 +1,6 @@
 -- Migration: Create Users Table
 -- Description: Create users table with all required fields and foreign keys
--- Author: GO ZERO Project
+-- Author: devleo-m
 
 -- Create users table
 CREATE TABLE users (

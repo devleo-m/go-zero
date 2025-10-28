@@ -1,6 +1,6 @@
 -- Seed: Cities
 -- Description: Insert initial cities data
--- Author: GO ZERO Project
+-- Author: devleo-m
 
 -- Insert major cities for São Paulo (state_id = 1)
 INSERT INTO cities (name, state_id) VALUES 

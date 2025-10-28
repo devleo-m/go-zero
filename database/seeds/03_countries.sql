@@ -1,6 +1,6 @@
 -- Seed: Countries
 -- Description: Insert initial countries data
--- Author: GO ZERO Project
+-- Author: devleo-m
 
 -- Insert countries (only if they don't exist)
 INSERT INTO countries (name, code) VALUES 

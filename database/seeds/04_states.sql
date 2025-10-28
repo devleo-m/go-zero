@@ -1,6 +1,6 @@
 -- Seed: States
 -- Description: Insert initial states data
--- Author: GO ZERO Project
+-- Author: devleo-m
 
 -- Insert states for Brazil (country_id = 1)
 INSERT INTO states (name, country_id, code) VALUES 

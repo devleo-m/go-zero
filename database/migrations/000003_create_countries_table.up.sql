@@ -1,6 +1,6 @@
 -- Migration: Create Countries Table
 -- Description: Create countries lookup table for user location
--- Author: GO ZERO Project
+-- Author: devleo-m
 
 -- Create countries table
 CREATE TABLE countries (

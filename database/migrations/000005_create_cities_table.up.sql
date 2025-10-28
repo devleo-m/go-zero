@@ -1,6 +1,6 @@
 -- Migration: Create Cities Table
 -- Description: Create cities lookup table for user location
--- Author: GO ZERO Project
+-- Author: devleo-m
 
 -- Create cities table
 CREATE TABLE cities (

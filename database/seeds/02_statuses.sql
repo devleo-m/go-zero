@@ -1,6 +1,6 @@
 -- Seed: Statuses
 -- Description: Insert initial statuses data
--- Author: GO ZERO Project
+-- Author: devleo-m
 
 -- Insert statuses (only if they don't exist)
 INSERT INTO statuses (name, description) VALUES 

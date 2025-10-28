@@ -1,6 +1,6 @@
 -- Migration: Create Roles Table
 -- Description: Create roles lookup table for user roles
--- Author: GO ZERO Project
+-- Author: devleo-m
 
 -- Create roles table
 CREATE TABLE roles (

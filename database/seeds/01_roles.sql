@@ -1,6 +1,6 @@
 -- Seed: Roles
 -- Description: Insert initial roles data
--- Author: GO ZERO Project
+-- Author: devleo-m
 
 -- Insert roles (only if they don't exist)
 INSERT INTO roles (name, description) VALUES 
