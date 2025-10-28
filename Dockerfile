@@ -20,4 +20,4 @@ COPY . .
 EXPOSE 8080
 
 # Comando para rodar a aplicação com Air (será executado pelo docker-compose)
-# CMD ["air", "-c", ".air.toml"]
+CMD ["air", "-c", ".air.toml"]

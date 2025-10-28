@@ -1,19 +1,19 @@
 services:
   app:
-    # O build será definido mais tarde com o Dockerfile da aplicação Go
-    # Por enquanto, vamos focar no DB
     container_name: ${APP_NAME}-app
     restart: always
     build:
       context: .
-      dockerfile: Dockerfile # Usaremos um Dockerfile separado para desenvolvimento com live-reload (Air)
+      dockerfile: Dockerfile
     ports:
       - "${APP_PORT}:8080"
     volumes:
       - .:/app
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
     environment:
       # Variáveis de ambiente da Aplicação
@@ -29,6 +29,12 @@ services:
       # Variáveis de ambiente do Redis
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
   db:
     container_name: ${APP_NAME}-db
     image: postgres:18-alpine
@@ -41,6 +47,11 @@ services:
       - "${DB_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     container_name: ${APP_NAME}-redis
