@@ -2,6 +2,7 @@ package validation
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -12,7 +13,7 @@ var (
 	uuidRegex  = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 )
 
-// ValidationError representa um erro de validação
+// ValidationError representa um erro de validação.
 type ValidationError struct {
 	Field   string
 	Message string
@@ -22,7 +23,7 @@ func (e ValidationError) Error() string {
 	return e.Message
 }
 
-// ValidateEmail valida um endereço de email
+// ValidateEmail valida um endereço de email.
 func ValidateEmail(email string) error {
 	if email == "" {
 		return ValidationError{Field: "email", Message: "Email is required"}
@@ -35,8 +36,17 @@ func ValidateEmail(email string) error {
 	return nil
 }
 
-// ValidatePassword valida uma senha
+// ValidatePassword valida uma senha.
 func ValidatePassword(password string) error {
+	if err := validatePasswordLength(password); err != nil {
+		return err
+	}
+
+	return validatePasswordComplexity(password)
+}
+
+// validatePasswordLength valida o comprimento da senha.
+func validatePasswordLength(password string) error {
 	if password == "" {
 		return ValidationError{Field: "password", Message: "Password is required"}
 	}
@@ -45,37 +55,61 @@ func ValidatePassword(password string) error {
 		return ValidationError{Field: "password", Message: "Password must be at least 8 characters long"}
 	}
 
-	var hasUpper, hasLower, hasDigit, hasSpecial bool
-	for _, char := range password {
-		switch {
-		case unicode.IsUpper(char):
-			hasUpper = true
-		case unicode.IsLower(char):
-			hasLower = true
-		case unicode.IsDigit(char):
-			hasDigit = true
-		case unicode.IsPunct(char) || unicode.IsSymbol(char):
-			hasSpecial = true
-		}
-	}
+	return nil
+}
 
-	if !hasUpper {
+// validatePasswordComplexity valida a complexidade da senha.
+func validatePasswordComplexity(password string) error {
+	requirements := checkPasswordRequirements(password)
+
+	if !requirements.hasUpper {
 		return ValidationError{Field: "password", Message: "Password must contain at least one uppercase letter"}
 	}
-	if !hasLower {
+
+	if !requirements.hasLower {
 		return ValidationError{Field: "password", Message: "Password must contain at least one lowercase letter"}
 	}
-	if !hasDigit {
+
+	if !requirements.hasDigit {
 		return ValidationError{Field: "password", Message: "Password must contain at least one digit"}
 	}
-	if !hasSpecial {
+
+	if !requirements.hasSpecial {
 		return ValidationError{Field: "password", Message: "Password must contain at least one special character"}
 	}
 
 	return nil
 }
 
-// ValidatePhone valida um número de telefone
+// passwordRequirements armazena os requisitos de uma senha.
+type passwordRequirements struct {
+	hasUpper   bool
+	hasLower   bool
+	hasDigit   bool
+	hasSpecial bool
+}
+
+// checkPasswordRequirements verifica se a senha atende aos requisitos.
+func checkPasswordRequirements(password string) passwordRequirements {
+	var reqs passwordRequirements
+
+	for _, char := range password {
+		switch {
+		case unicode.IsUpper(char):
+			reqs.hasUpper = true
+		case unicode.IsLower(char):
+			reqs.hasLower = true
+		case unicode.IsDigit(char):
+			reqs.hasDigit = true
+		case unicode.IsPunct(char) || unicode.IsSymbol(char):
+			reqs.hasSpecial = true
+		}
+	}
+
+	return reqs
+}
+
+// ValidatePhone valida um número de telefone.
 func ValidatePhone(phone string) error {
 	if phone == "" {
 		return nil // Phone é opcional
@@ -88,7 +122,7 @@ func ValidatePhone(phone string) error {
 	return nil
 }
 
-// ValidateUUID valida um UUID
+// ValidateUUID valida um UUID.
 func ValidateUUID(uuid string) error {
 	if uuid == "" {
 		return ValidationError{Field: "id", Message: "ID is required"}
@@ -101,7 +135,7 @@ func ValidateUUID(uuid string) error {
 	return nil
 }
 
-// ValidateName valida um nome
+// ValidateName valida um nome.
 func ValidateName(name string) error {
 	if name == "" {
 		return ValidationError{Field: "name", Message: "Name is required"}
@@ -118,7 +152,7 @@ func ValidateName(name string) error {
 	return nil
 }
 
-// ValidateRole valida um role
+// ValidateRole valida um role.
 func ValidateRole(role string) error {
 	validRoles := []string{"user", "admin", "moderator", "super_admin"}
 
@@ -135,7 +169,7 @@ func ValidateRole(role string) error {
 	return ValidationError{Field: "role", Message: "Invalid role"}
 }
 
-// ValidateStatus valida um status
+// ValidateStatus valida um status.
 func ValidateStatus(status string) error {
 	validStatuses := []string{"active", "inactive", "pending", "suspended"}
 
@@ -152,12 +186,12 @@ func ValidateStatus(status string) error {
 	return ValidationError{Field: "status", Message: "Invalid status"}
 }
 
-// SanitizeString limpa e sanitiza uma string
+// SanitizeString limpa e sanitiza uma string.
 func SanitizeString(input string) string {
 	return strings.TrimSpace(input)
 }
 
-// ValidatePagination valida parâmetros de paginação
+// ValidatePagination valida parâmetros de paginação.
 func ValidatePagination(page, limit int) error {
 	if page < 1 {
 		return ValidationError{Field: "page", Message: "Page must be greater than 0"}
@@ -170,7 +204,7 @@ func ValidatePagination(page, limit int) error {
 	return nil
 }
 
-// ValidateEmailList valida uma lista de emails
+// ValidateEmailList valida uma lista de emails.
 func ValidateEmailList(emails []string) error {
 	if len(emails) == 0 {
 		return ValidationError{Field: "emails", Message: "At least one email is required"}
@@ -182,42 +216,44 @@ func ValidateEmailList(emails []string) error {
 
 	for i, email := range emails {
 		if err := ValidateEmail(email); err != nil {
-			return ValidationError{Field: "emails", Message: "Invalid email at position " + string(rune(i+1))}
+			return ValidationError{Field: "emails", Message: "Invalid email at position " + strconv.Itoa(i+1)}
 		}
 	}
 
 	return nil
 }
 
-// ValidateStringLength valida o comprimento de uma string
+// ValidateStringLength valida o comprimento de uma string.
 func ValidateStringLength(field, value string, min, max int) error {
 	if value == "" && min > 0 {
 		return ValidationError{Field: field, Message: field + " is required"}
 	}
 
 	if len(value) < min {
-		return ValidationError{Field: field, Message: field + " must be at least " + string(rune(min)) + " characters long"}
+		return ValidationError{Field: field, Message: field + " must be at least " + strconv.Itoa(min) + " characters long"}
 	}
 
 	if len(value) > max {
-		return ValidationError{Field: field, Message: field + " must be at most " + string(rune(max)) + " characters long"}
+		return ValidationError{Field: field, Message: field + " must be at most " + strconv.Itoa(max) + " characters long"}
 	}
 
 	return nil
 }
 
-// ValidatePositiveInt valida se um inteiro é positivo
+// ValidatePositiveInt valida se um inteiro é positivo.
 func ValidatePositiveInt(field string, value int) error {
 	if value <= 0 {
 		return ValidationError{Field: field, Message: field + " must be positive"}
 	}
+
 	return nil
 }
 
-// ValidateNonNegativeInt valida se um inteiro é não negativo
+// ValidateNonNegativeInt valida se um inteiro é não negativo.
 func ValidateNonNegativeInt(field string, value int) error {
 	if value < 0 {
 		return ValidationError{Field: field, Message: field + " must be non-negative"}
 	}
+
 	return nil
 }

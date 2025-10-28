@@ -2,7 +2,7 @@ package domain
 
 import "errors"
 
-// Erros do domínio
+// Erros do domínio.
 var (
 	ErrUserNotFound       = errors.New("user not found")
 	ErrEmailAlreadyInUse  = errors.New("email already in use")

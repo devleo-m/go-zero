@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// LoggingMiddleware cria um middleware de logging
+// LoggingMiddleware cria um middleware de logging.
 func LoggingMiddleware(logger interface{}) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Gerar request ID único
@@ -23,7 +23,7 @@ func LoggingMiddleware(logger interface{}) gin.HandlerFunc {
 		// Processar requisição
 		c.Next()
 
-		// Calcular duração
+		// Calculator duração
 		duration := time.Since(start)
 
 		// Registrar fim da requisição
@@ -31,7 +31,7 @@ func LoggingMiddleware(logger interface{}) gin.HandlerFunc {
 	}
 }
 
-// logRequest registra informações da requisição
+// logRequest registra informações da requisição.
 func logRequest(c *gin.Context, start time.Time, duration time.Duration) {
 	// Obter informações da requisição
 	method := c.Request.Method
@@ -78,7 +78,7 @@ func logRequest(c *gin.Context, start time.Time, duration time.Duration) {
 	}
 }
 
-// logInfo registra um log de informação
+// logInfo registra um log de informação.
 func logInfo(c *gin.Context, msg string, fields ...interface{}) {
 	// Aqui você pode integrar com seu sistema de logging
 	// Por exemplo, usando zap, logrus, etc.
@@ -86,17 +86,17 @@ func logInfo(c *gin.Context, msg string, fields ...interface{}) {
 	gin.DefaultWriter.Write([]byte(msg + "\n"))
 }
 
-// logWarn registra um log de aviso
+// logWarn registra um log de aviso.
 func logWarn(c *gin.Context, msg string, fields ...interface{}) {
 	gin.DefaultErrorWriter.Write([]byte(msg + "\n"))
 }
 
-// logError registra um log de erro
+// logError registra um log de erro.
 func logError(c *gin.Context, msg string, fields ...interface{}) {
 	gin.DefaultErrorWriter.Write([]byte(msg + "\n"))
 }
 
-// RequestIDMiddleware adiciona um request ID único a cada requisição
+// RequestIDMiddleware adiciona um request ID único a cada requisição.
 func RequestIDMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		requestID := c.GetHeader("X-Request-ID")
@@ -110,7 +110,7 @@ func RequestIDMiddleware() gin.HandlerFunc {
 	}
 }
 
-// RecoveryMiddleware cria um middleware de recovery personalizado
+// RecoveryMiddleware cria um middleware de recovery personalizado.
 func RecoveryMiddleware() gin.HandlerFunc {
 	return gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
 		// Log do erro

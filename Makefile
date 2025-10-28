@@ -48,15 +48,41 @@ test-e2e: ## Executa apenas testes end-to-end
 	@echo "$(YELLOW)================================================$(NC)"
 	@go test -v -cover ./tests/e2e/...
 
-lint: ## Executa linter
+lint: ## Executa linter completo
 	@echo "$(BLUE)🔍 Executando linter...$(NC)"
 	@echo "$(YELLOW)================================================$(NC)"
-	@golangci-lint run
+	@~/go/bin/golangci-lint run --timeout=10m
+
+lint-fast: ## Executa linter rápido (apenas novos erros)
+	@echo "$(BLUE)⚡ Executando linter rápido...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@~/go/bin/golangci-lint run --fast --new --timeout=5m
 
 lint-fix: ## Executa linter e corrige problemas automaticamente
 	@echo "$(BLUE)🔧 Executando linter e corrigindo problemas...$(NC)"
 	@echo "$(YELLOW)================================================$(NC)"
-	@golangci-lint run --fix
+	@~/go/bin/golangci-lint run --fix --timeout=10m
+
+lint-critical: ## Verifica apenas erros críticos (errcheck, gosec, staticcheck)
+	@echo "$(BLUE)🚨 Verificando erros críticos...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@~/go/bin/golangci-lint run --disable-all \
+		--enable=errcheck \
+		--enable=gosec \
+		--enable=staticcheck \
+		--enable=govet \
+		--timeout=5m
+
+lint-config: ## Valida configuração do linter
+	@echo "$(BLUE)⚙️  Validando configuração do linter...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@~/go/bin/golangci-lint config verify
+
+lint-report: ## Gera relatório de linting em JSON
+	@echo "$(BLUE)📊 Gerando relatório de linting...$(NC)"
+	@echo "$(YELLOW)================================================$(NC)"
+	@~/go/bin/golangci-lint run --out-format=json --timeout=10m > lint-report.json
+	@echo "$(GREEN)✅ Relatório gerado: lint-report.json$(NC)"
 
 format: ## Formata código Go
 	@echo "$(BLUE)🎨 Formatando código...$(NC)"

@@ -49,9 +49,13 @@ func (r *PostgresRepository) Create(ctx context.Context, user *User) error {
 ```
 infrastructure/
 ├── 📄 README.md           # Este arquivo - conceitos de infraestrutura
-└── postgres/              # 🗄️ Implementação PostgreSQL
-    ├── repository.go      # Repositório PostgreSQL
-    └── user.go           # Modelo de dados GORM
+├── postgres/              # 🗄️ Implementação PostgreSQL
+│   ├── repository.go      # Repositório PostgreSQL
+│   └── user.go           # Modelo de dados GORM
+└── http/                  # 🌐 Adaptador HTTP (Controllers/Handlers)
+    ├── handler.go         # Handlers das rotas
+    ├── dto.go            # Data Transfer Objects (Request/Response)
+    └── routes.go         # Configuração das rotas
 ```
 
 ## 🗄️ Implementação PostgreSQL
@@ -293,13 +297,68 @@ func TestUserRepository(t *testing.T) {
 - ✅ **Domain** pode ser usado com diferentes bancos
 - ✅ **Use Cases** funcionam independente da persistência
 
+## 🌐 Adaptador HTTP
+
+A camada HTTP também faz parte da **Infrastructure**, pois é um **adaptador externo** que conecta o mundo exterior (requisições HTTP) com os casos de uso da aplicação.
+
+### **Por que HTTP está na Infrastructure?**
+
+Na **Arquitetura Hexagonal** (Ports & Adapters):
+- 🎯 **Domain** = Core (regras de negócio)
+- 💼 **Application** = Casos de uso (orquestração)
+- 🔌 **Infrastructure** = Adaptadores externos (HTTP, Database, etc.)
+
+O HTTP é um **adaptador de entrada** (driving adapter) que:
+- Recebe requisições externas
+- Converte DTOs em inputs de casos de uso
+- Chama os casos de uso
+- Retorna respostas formatadas
+
+### **Estrutura HTTP:**
+
+```go
+// handler.go - Handlers das rotas
+type Handler struct {
+    createUserUseCase *application.CreateUserUseCase
+    getUserUseCase    *application.GetUserUseCase
+    // ... outros use cases
+}
+
+func (h *Handler) CreateUser(c *gin.Context) {
+    // 1. Receber e validar request
+    var req CreateUserRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        response.BadRequest(c, "INVALID_REQUEST", err.Error())
+        return
+    }
+    
+    // 2. Converter para input do use case
+    input := application.CreateUserInput{
+        Name:     validation.SanitizeString(req.Name),
+        Email:    validation.SanitizeString(req.Email),
+        Password: req.Password,
+    }
+    
+    // 3. Chamar use case
+    result, err := h.createUserUseCase.Execute(c.Request.Context(), input)
+    if err != nil {
+        response.BadRequest(c, "CREATE_USER_FAILED", err.Error())
+        return
+    }
+    
+    // 4. Retornar resposta formatada
+    response.Created(c, toUserResponse(result.User), result.Message)
+}
+```
+
 ## 🚀 Próximos Passos
 
 1. **Explore o código** do repositório PostgreSQL
 2. **Entenda** como o mapeamento funciona
 3. **Veja** como os erros são tratados
-4. **Pratique** criando outros repositórios (Redis, MongoDB, etc.)
+4. **Entenda** como o HTTP é um adaptador de entrada
+5. **Pratique** criando outros adaptadores (gRPC, GraphQL, etc.)
 
 ---
 
-> **💡 Dica:** A camada de infraestrutura deve **implementar** as interfaces definidas pelo domínio, mas nunca **definir** regras de negócio!
+> **💡 Dica:** A camada de infraestrutura deve **implementar** as interfaces definidas pelo domínio e **adaptar** entradas externas, mas nunca **definir** regras de negócio!

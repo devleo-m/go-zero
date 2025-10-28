@@ -7,39 +7,40 @@ import (
 	"github.com/devleo-m/go-zero/internal/modules/user/domain"
 )
 
-// CreateUserUseCase implementa o caso de uso de criação de usuário
+// CreateUserUseCase implementa o caso de uso de criação de usuário.
 type CreateUserUseCase struct {
 	userRepo domain.Repository
 }
 
-// NewCreateUserUseCase cria uma nova instância do caso de uso
+// NewCreateUserUseCase cria uma nova instância do caso de uso.
 func NewCreateUserUseCase(userRepo domain.Repository) *CreateUserUseCase {
 	return &CreateUserUseCase{
 		userRepo: userRepo,
 	}
 }
 
-// CreateUserInput representa os dados de entrada
+// CreateUserInput representa os dados de entrada.
 type CreateUserInput struct {
+	Phone    *string `json:"phone,omitempty"`
 	Name     string  `json:"name" validate:"required,min=2,max=100"`
 	Email    string  `json:"email" validate:"required,email"`
 	Password string  `json:"password" validate:"required,min=8"`
-	Phone    *string `json:"phone,omitempty"`
 }
 
-// CreateUserOutput representa os dados de saída
+// CreateUserOutput representa os dados de saída.
 type CreateUserOutput struct {
 	User    *domain.User `json:"user"`
 	Message string       `json:"message"`
 }
 
-// Execute executa o caso de uso
+// Execute executa o caso de uso.
 func (uc *CreateUserUseCase) Execute(ctx context.Context, input CreateUserInput) (*CreateUserOutput, error) {
 	// Verificar se email já existe
 	existingUser, err := uc.userRepo.GetByEmail(ctx, input.Email)
 	if err != nil && err != domain.ErrUserNotFound {
 		return nil, fmt.Errorf("failed to check email: %w", err)
 	}
+
 	if existingUser != nil {
 		return nil, domain.ErrEmailAlreadyInUse
 	}

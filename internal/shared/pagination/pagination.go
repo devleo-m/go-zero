@@ -6,15 +6,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Params representa os parâmetros de paginação
+// Params representa os parâmetros de paginação.
 type Params struct {
-	Page  int
-	Limit int
 	Sort  string
 	Order string
+	Page  int
+	Limit int
 }
 
-// Result representa o resultado paginado
+// Result representa o resultado paginado.
 type Result struct {
 	Data       interface{} `json:"data"`
 	Page       int         `json:"page"`
@@ -25,7 +25,7 @@ type Result struct {
 	HasPrev    bool        `json:"has_prev"`
 }
 
-// ParseFromQuery extrai parâmetros de paginação da query string
+// ParseFromQuery extrai parâmetros de paginação da query string.
 func ParseFromQuery(c *gin.Context) *Params {
 	page := parseInt(c.Query("page"), 1)
 	limit := parseInt(c.Query("limit"), 10)
@@ -36,12 +36,15 @@ func ParseFromQuery(c *gin.Context) *Params {
 	if page < 1 {
 		page = 1
 	}
+
 	if limit < 1 {
 		limit = 10
 	}
+
 	if limit > 100 {
 		limit = 100
 	}
+
 	if order != "asc" && order != "desc" {
 		order = "asc"
 	}
@@ -54,12 +57,12 @@ func ParseFromQuery(c *gin.Context) *Params {
 	}
 }
 
-// Offset calcula o offset baseado na página e limite
+// Offset calcula o offset baseado na página e limite.
 func (p *Params) Offset() int {
 	return (p.Page - 1) * p.Limit
 }
 
-// NewResult cria um novo resultado paginado
+// NewResult cria um novo resultado paginado.
 func NewResult(data interface{}, total int64, params *Params) *Result {
 	totalPages := int(total) / params.Limit
 	if int(total)%params.Limit > 0 {
@@ -77,7 +80,7 @@ func NewResult(data interface{}, total int64, params *Params) *Result {
 	}
 }
 
-// parseInt converte string para int com valor padrão
+// parseInt converte string para int com valor padrão.
 func parseInt(s string, defaultValue int) int {
 	if s == "" {
 		return defaultValue
@@ -91,7 +94,7 @@ func parseInt(s string, defaultValue int) int {
 	return val
 }
 
-// ValidateParams valida os parâmetros de paginação
+// ValidateParams valida os parâmetros de paginação.
 func ValidateParams(params *Params) error {
 	if params.Page < 1 {
 		return &ValidationError{Field: "page", Message: "Page must be greater than 0"}
@@ -112,7 +115,7 @@ func ValidateParams(params *Params) error {
 	return nil
 }
 
-// ValidationError representa um erro de validação
+// ValidationError representa um erro de validação.
 type ValidationError struct {
 	Field   string
 	Message string
@@ -122,7 +125,7 @@ func (e ValidationError) Error() string {
 	return e.Message
 }
 
-// GetSortClause retorna a cláusula ORDER BY para SQL
+// GetSortClause retorna a cláusula ORDER BY para SQL.
 func (p *Params) GetSortClause() string {
 	if p.Sort == "" {
 		return ""
@@ -136,7 +139,7 @@ func (p *Params) GetSortClause() string {
 	return p.Sort + " " + order
 }
 
-// GetGORMOrder retorna a string de ordenação para GORM
+// GetGORMOrder retorna a string de ordenação para GORM.
 func (p *Params) GetGORMOrder() string {
 	if p.Sort == "" {
 		return ""

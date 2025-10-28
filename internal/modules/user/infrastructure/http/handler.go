@@ -3,15 +3,16 @@ package http
 import (
 	"strconv"
 
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+
 	"github.com/devleo-m/go-zero/internal/modules/user/application"
 	"github.com/devleo-m/go-zero/internal/modules/user/domain"
 	"github.com/devleo-m/go-zero/internal/shared/response"
 	"github.com/devleo-m/go-zero/internal/shared/validation"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
-// Handler gerencia as rotas HTTP para usuários
+// Handler gerencia as rotas HTTP para usuários.
 type Handler struct {
 	createUserUseCase *application.CreateUserUseCase
 	getUserUseCase    *application.GetUserUseCase
@@ -20,7 +21,7 @@ type Handler struct {
 	deleteUserUseCase *application.DeleteUserUseCase
 }
 
-// NewHandler cria uma nova instância do handler
+// NewHandler cria uma nova instância do handler.
 func NewHandler(
 	createUserUseCase *application.CreateUserUseCase,
 	getUserUseCase *application.GetUserUseCase,
@@ -37,7 +38,7 @@ func NewHandler(
 	}
 }
 
-// CreateUser cria um novo usuário
+// CreateUser cria um novo usuário.
 func (h *Handler) CreateUser(c *gin.Context) {
 	var req CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -67,7 +68,7 @@ func (h *Handler) CreateUser(c *gin.Context) {
 	response.Created(c, toUserResponse(result.User), result.Message)
 }
 
-// GetUser busca um usuário por ID
+// GetUser busca um usuário por ID.
 func (h *Handler) GetUser(c *gin.Context) {
 	idStr := c.Param("id")
 	if err := validation.ValidateUUID(idStr); err != nil {
@@ -75,22 +76,30 @@ func (h *Handler) GetUser(c *gin.Context) {
 		return
 	}
 
-	id, _ := uuid.Parse(idStr)
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		response.BadRequest(c, "INVALID_UUID", "Invalid UUID format")
+		return
+	}
+
 	input := application.GetUserInput{ID: id}
+
 	result, err := h.getUserUseCase.Execute(c.Request.Context(), input)
 	if err != nil {
 		if err == domain.ErrUserNotFound {
 			response.NotFound(c, "USER_NOT_FOUND", "User not found")
 			return
 		}
+
 		response.InternalServerError(c, "GET_USER_FAILED", err.Error())
+
 		return
 	}
 
 	response.Success(c, toUserResponse(result.User))
 }
 
-// ListUsers lista usuários
+// ListUsers lista usuários.
 func (h *Handler) ListUsers(c *gin.Context) {
 	limitStr := c.DefaultQuery("limit", "10")
 	offsetStr := c.DefaultQuery("offset", "0")
@@ -127,7 +136,7 @@ func (h *Handler) ListUsers(c *gin.Context) {
 		users[i] = toUserResponse(user)
 	}
 
-	// Calcular página corretamente
+	// Calculator página corretamente
 	page := (offset / limit) + 1
 	meta := response.NewMeta(page, limit, int64(result.Total))
 
@@ -136,7 +145,7 @@ func (h *Handler) ListUsers(c *gin.Context) {
 	}, meta)
 }
 
-// UpdateUser atualiza um usuário
+// UpdateUser atualiza um usuário.
 func (h *Handler) UpdateUser(c *gin.Context) {
 	idStr := c.Param("id")
 	if err := validation.ValidateUUID(idStr); err != nil {
@@ -156,7 +165,12 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 		phone = &req.Phone
 	}
 
-	id, _ := uuid.Parse(idStr)
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		response.BadRequest(c, "INVALID_UUID", "Invalid UUID format")
+		return
+	}
+
 	input := application.UpdateUserInput{
 		ID:    id,
 		Name:  validation.SanitizeString(req.Name),
@@ -169,14 +183,16 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 			response.NotFound(c, "USER_NOT_FOUND", "User not found")
 			return
 		}
+
 		response.BadRequest(c, "UPDATE_USER_FAILED", err.Error())
+
 		return
 	}
 
 	response.Success(c, toUserResponse(result.User), result.Message)
 }
 
-// DeleteUser deleta um usuário
+// DeleteUser deleta um usuário.
 func (h *Handler) DeleteUser(c *gin.Context) {
 	idStr := c.Param("id")
 	if err := validation.ValidateUUID(idStr); err != nil {
@@ -184,22 +200,30 @@ func (h *Handler) DeleteUser(c *gin.Context) {
 		return
 	}
 
-	id, _ := uuid.Parse(idStr)
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		response.BadRequest(c, "INVALID_UUID", "Invalid UUID format")
+		return
+	}
+
 	input := application.DeleteUserInput{ID: id}
+
 	result, err := h.deleteUserUseCase.Execute(c.Request.Context(), input)
 	if err != nil {
 		if err == domain.ErrUserNotFound {
 			response.NotFound(c, "USER_NOT_FOUND", "User not found")
 			return
 		}
+
 		response.InternalServerError(c, "DELETE_USER_FAILED", err.Error())
+
 		return
 	}
 
 	response.Success(c, nil, result.Message)
 }
 
-// toUserResponse converte domain.User para UserResponse
+// toUserResponse converte domain.User para UserResponse.
 func toUserResponse(user *domain.User) UserResponse {
 	return UserResponse{
 		ID:        user.ID,

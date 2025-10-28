@@ -7,11 +7,11 @@ import (
 )
 
 type Response struct {
-	Success bool        `json:"success"`
-	Message string      `json:"message,omitempty"`
 	Data    interface{} `json:"data,omitempty"`
-	Error   string      `json:"error,omitempty"`
 	Meta    *Meta       `json:"meta,omitempty"`
+	Message string      `json:"message,omitempty"`
+	Error   string      `json:"error,omitempty"`
+	Success bool        `json:"success"`
 }
 
 type Meta struct {
@@ -21,7 +21,7 @@ type Meta struct {
 	TotalPages int   `json:"total_pages,omitempty"`
 }
 
-// Success retorna uma resposta de sucesso
+// Success retorna uma resposta de sucesso.
 func Success(c *gin.Context, data interface{}, message ...string) {
 	msg := ""
 	if len(message) > 0 {
@@ -35,7 +35,7 @@ func Success(c *gin.Context, data interface{}, message ...string) {
 	})
 }
 
-// Created retorna uma resposta de criação bem-sucedida
+// Created retorna uma resposta de criação bem-sucedida.
 func Created(c *gin.Context, data interface{}, message ...string) {
 	msg := "Created successfully"
 	if len(message) > 0 {
@@ -49,7 +49,7 @@ func Created(c *gin.Context, data interface{}, message ...string) {
 	})
 }
 
-// NoContent retorna uma resposta sem conteúdo
+// NoContent retorna uma resposta sem conteúdo.
 func NoContent(c *gin.Context, message ...string) {
 	msg := "Operation completed successfully"
 	if len(message) > 0 {
@@ -62,8 +62,8 @@ func NoContent(c *gin.Context, message ...string) {
 	})
 }
 
-// Error retorna uma resposta de erro
-func Error(c *gin.Context, statusCode int, errorCode string, message string) {
+// Error retorna uma resposta de erro.
+func Error(c *gin.Context, statusCode int, errorCode, message string) {
 	c.JSON(statusCode, Response{
 		Success: false,
 		Error:   errorCode,
@@ -71,37 +71,37 @@ func Error(c *gin.Context, statusCode int, errorCode string, message string) {
 	})
 }
 
-// BadRequest retorna uma resposta de erro de requisição inválida
-func BadRequest(c *gin.Context, errorCode string, message string) {
+// BadRequest retorna uma resposta de erro de requisição inválida.
+func BadRequest(c *gin.Context, errorCode, message string) {
 	Error(c, http.StatusBadRequest, errorCode, message)
 }
 
-// Unauthorized retorna uma resposta de não autorizado
-func Unauthorized(c *gin.Context, errorCode string, message string) {
+// Unauthorized retorna uma resposta de não autorizado.
+func Unauthorized(c *gin.Context, errorCode, message string) {
 	Error(c, http.StatusUnauthorized, errorCode, message)
 }
 
-// Forbidden retorna uma resposta de proibido
-func Forbidden(c *gin.Context, errorCode string, message string) {
+// Forbidden retorna uma resposta de proibido.
+func Forbidden(c *gin.Context, errorCode, message string) {
 	Error(c, http.StatusForbidden, errorCode, message)
 }
 
-// NotFound retorna uma resposta de não encontrado
-func NotFound(c *gin.Context, errorCode string, message string) {
+// NotFound retorna uma resposta de não encontrado.
+func NotFound(c *gin.Context, errorCode, message string) {
 	Error(c, http.StatusNotFound, errorCode, message)
 }
 
-// Conflict retorna uma resposta de conflito
-func Conflict(c *gin.Context, errorCode string, message string) {
+// Conflict retorna uma resposta de conflito.
+func Conflict(c *gin.Context, errorCode, message string) {
 	Error(c, http.StatusConflict, errorCode, message)
 }
 
-// InternalServerError retorna uma resposta de erro interno do servidor
-func InternalServerError(c *gin.Context, errorCode string, message string) {
+// InternalServerError retorna uma resposta de erro interno do servidor.
+func InternalServerError(c *gin.Context, errorCode, message string) {
 	Error(c, http.StatusInternalServerError, errorCode, message)
 }
 
-// Paginated retorna uma resposta paginada
+// Paginated retorna uma resposta paginada.
 func Paginated(c *gin.Context, data interface{}, meta *Meta, message ...string) {
 	msg := ""
 	if len(message) > 0 {
@@ -116,7 +116,7 @@ func Paginated(c *gin.Context, data interface{}, meta *Meta, message ...string) 
 	})
 }
 
-// ValidationError retorna uma resposta de erro de validação
+// ValidationError retorna uma resposta de erro de validação.
 func ValidationError(c *gin.Context, errors map[string]string) {
 	c.JSON(http.StatusBadRequest, Response{
 		Success: false,
@@ -126,7 +126,7 @@ func ValidationError(c *gin.Context, errors map[string]string) {
 	})
 }
 
-// NewMeta cria uma nova estrutura de meta para paginação
+// NewMeta cria uma nova estrutura de meta para paginação.
 func NewMeta(page, limit int, total int64) *Meta {
 	totalPages := int(total) / limit
 	if int(total)%limit > 0 {

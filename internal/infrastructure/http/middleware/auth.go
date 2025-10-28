@@ -9,7 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// Claims representa as claims do JWT
+// Claims representa as claims do JWT.
 type Claims struct {
 	UserID string `json:"user_id"`
 	Email  string `json:"email"`
@@ -17,7 +17,7 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-// AuthMiddleware cria um middleware de autenticação JWT
+// AuthMiddleware cria um middleware de autenticação JWT.
 func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
@@ -28,6 +28,7 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 				"message": "Authorization header is required",
 			})
 			c.Abort()
+
 			return
 		}
 
@@ -39,13 +40,13 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 				"message": "Bearer token is required",
 			})
 			c.Abort()
+
 			return
 		}
 
 		token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 			return []byte(jwtSecret), nil
 		})
-
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
@@ -53,6 +54,7 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 				"message": "Invalid or expired token",
 			})
 			c.Abort()
+
 			return
 		}
 
@@ -63,6 +65,7 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 				"message": "Invalid token",
 			})
 			c.Abort()
+
 			return
 		}
 
@@ -74,6 +77,7 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 				"message": "Invalid token claims",
 			})
 			c.Abort()
+
 			return
 		}
 
@@ -85,6 +89,7 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 				"message": "Token has expired",
 			})
 			c.Abort()
+
 			return
 		}
 
@@ -98,7 +103,7 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 	}
 }
 
-// OptionalAuthMiddleware cria um middleware de autenticação opcional
+// OptionalAuthMiddleware cria um middleware de autenticação opcional.
 func OptionalAuthMiddleware(jwtSecret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
@@ -144,7 +149,7 @@ func OptionalAuthMiddleware(jwtSecret string) gin.HandlerFunc {
 	}
 }
 
-// RequireRole cria um middleware que requer um role específico
+// RequireRole cria um middleware que requer um role específico.
 func RequireRole(requiredRole string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userRole, exists := c.Get("user_role")
@@ -155,6 +160,7 @@ func RequireRole(requiredRole string) gin.HandlerFunc {
 				"message": "Authentication is required",
 			})
 			c.Abort()
+
 			return
 		}
 
@@ -166,6 +172,7 @@ func RequireRole(requiredRole string) gin.HandlerFunc {
 				"message": "Invalid user role",
 			})
 			c.Abort()
+
 			return
 		}
 
@@ -177,6 +184,7 @@ func RequireRole(requiredRole string) gin.HandlerFunc {
 				"message": "Insufficient permissions",
 			})
 			c.Abort()
+
 			return
 		}
 
@@ -184,7 +192,7 @@ func RequireRole(requiredRole string) gin.HandlerFunc {
 	}
 }
 
-// RequireAnyRole cria um middleware que requer qualquer um dos roles especificados
+// RequireAnyRole cria um middleware que requer qualquer um dos roles especificados.
 func RequireAnyRole(requiredRoles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userRole, exists := c.Get("user_role")
@@ -195,6 +203,7 @@ func RequireAnyRole(requiredRoles ...string) gin.HandlerFunc {
 				"message": "Authentication is required",
 			})
 			c.Abort()
+
 			return
 		}
 
@@ -206,11 +215,13 @@ func RequireAnyRole(requiredRoles ...string) gin.HandlerFunc {
 				"message": "Invalid user role",
 			})
 			c.Abort()
+
 			return
 		}
 
 		// Verificar se o usuário tem algum dos roles necessários
 		hasRole := false
+
 		for _, requiredRole := range requiredRoles {
 			if hasRequiredRole(role, requiredRole) {
 				hasRole = true
@@ -225,6 +236,7 @@ func RequireAnyRole(requiredRoles ...string) gin.HandlerFunc {
 				"message": "Insufficient permissions",
 			})
 			c.Abort()
+
 			return
 		}
 
@@ -232,7 +244,7 @@ func RequireAnyRole(requiredRoles ...string) gin.HandlerFunc {
 	}
 }
 
-// hasRequiredRole verifica se o usuário tem o role necessário
+// hasRequiredRole verifica se o usuário tem o role necessário.
 func hasRequiredRole(userRole, requiredRole string) bool {
 	// Hierarquia de roles (do menor para o maior)
 	roleHierarchy := map[string]int{
@@ -253,7 +265,7 @@ func hasRequiredRole(userRole, requiredRole string) bool {
 	return userLevel >= requiredLevel
 }
 
-// GetUserID extrai o ID do usuário do contexto
+// GetUserID extrai o ID do usuário do contexto.
 func GetUserID(c *gin.Context) (string, bool) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -261,10 +273,11 @@ func GetUserID(c *gin.Context) (string, bool) {
 	}
 
 	id, ok := userID.(string)
+
 	return id, ok
 }
 
-// GetUserRole extrai o role do usuário do contexto
+// GetUserRole extrai o role do usuário do contexto.
 func GetUserRole(c *gin.Context) (string, bool) {
 	userRole, exists := c.Get("user_role")
 	if !exists {
@@ -272,10 +285,11 @@ func GetUserRole(c *gin.Context) (string, bool) {
 	}
 
 	role, ok := userRole.(string)
+
 	return role, ok
 }
 
-// GetUserEmail extrai o email do usuário do contexto
+// GetUserEmail extrai o email do usuário do contexto.
 func GetUserEmail(c *gin.Context) (string, bool) {
 	userEmail, exists := c.Get("user_email")
 	if !exists {
@@ -283,5 +297,6 @@ func GetUserEmail(c *gin.Context) (string, bool) {
 	}
 
 	email, ok := userEmail.(string)
+
 	return email, ok
 }

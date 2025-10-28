@@ -4,36 +4,37 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/devleo-m/go-zero/internal/modules/user/domain"
 	"github.com/google/uuid"
+
+	"github.com/devleo-m/go-zero/internal/modules/user/domain"
 )
 
-// UpdateUserUseCase implementa o caso de uso de atualizar usuário
+// UpdateUserUseCase implementa o caso de uso de atualizar usuário.
 type UpdateUserUseCase struct {
 	userRepo domain.Repository
 }
 
-// NewUpdateUserUseCase cria uma nova instância do caso de uso
+// NewUpdateUserUseCase cria uma nova instância do caso de uso.
 func NewUpdateUserUseCase(userRepo domain.Repository) *UpdateUserUseCase {
 	return &UpdateUserUseCase{
 		userRepo: userRepo,
 	}
 }
 
-// UpdateUserInput representa os dados de entrada
+// UpdateUserInput representa os dados de entrada.
 type UpdateUserInput struct {
-	ID    uuid.UUID `json:"id" validate:"required"`
-	Name  string    `json:"name" validate:"required,min=2,max=100"`
 	Phone *string   `json:"phone,omitempty"`
+	Name  string    `json:"name" validate:"required,min=2,max=100"`
+	ID    uuid.UUID `json:"id" validate:"required"`
 }
 
-// UpdateUserOutput representa os dados de saída
+// UpdateUserOutput representa os dados de saída.
 type UpdateUserOutput struct {
 	User    *domain.User `json:"user"`
 	Message string       `json:"message"`
 }
 
-// Execute executa o caso de uso
+// Execute executa o caso de uso.
 func (uc *UpdateUserUseCase) Execute(ctx context.Context, input UpdateUserInput) (*UpdateUserOutput, error) {
 	// Buscar usuário existente
 	user, err := uc.userRepo.GetByID(ctx, input.ID)

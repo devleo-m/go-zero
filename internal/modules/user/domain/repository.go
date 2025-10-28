@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Repository define as operações de persistência para User
+// Repository define as operações de persistência para User.
 type Repository interface {
 	Create(ctx context.Context, user *User) error
 	GetByID(ctx context.Context, id uuid.UUID) (*User, error)

@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RateLimiter representa um limitador de taxa
+// RateLimiter representa um limitador de taxa.
 type RateLimiter struct {
 	requests map[string][]time.Time
 	mutex    sync.RWMutex
@@ -16,7 +16,7 @@ type RateLimiter struct {
 	window   time.Duration
 }
 
-// NewRateLimiter cria um novo limitador de taxa
+// NewRateLimiter cria um novo limitador de taxa.
 func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
 	return &RateLimiter{
 		requests: make(map[string][]time.Time),
@@ -25,7 +25,7 @@ func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
 	}
 }
 
-// RateLimit cria um middleware de rate limiting
+// RateLimit cria um middleware de rate limiting.
 func RateLimit(limiter *RateLimiter) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Obter identificador do cliente (IP ou user ID)
@@ -39,6 +39,7 @@ func RateLimit(limiter *RateLimiter) gin.HandlerFunc {
 				"message": "Too many requests",
 			})
 			c.Abort()
+
 			return
 		}
 
@@ -46,7 +47,7 @@ func RateLimit(limiter *RateLimiter) gin.HandlerFunc {
 	}
 }
 
-// Allow verifica se uma requisição é permitida
+// Allow verifica se uma requisição é permitida.
 func (rl *RateLimiter) Allow(clientID string) bool {
 	rl.mutex.Lock()
 	defer rl.mutex.Unlock()
@@ -63,16 +64,18 @@ func (rl *RateLimiter) Allow(clientID string) bool {
 
 	// Adicionar nova requisição
 	rl.requests[clientID] = append(rl.requests[clientID], now)
+
 	return true
 }
 
-// cleanup remove requisições antigas
+// cleanup remove requisições antigas.
 func (rl *RateLimiter) cleanup(clientID string, now time.Time) {
 	cutoff := now.Add(-rl.window)
 	requests := rl.requests[clientID]
 
 	// Encontrar o primeiro índice que não deve ser removido
 	start := 0
+
 	for i, reqTime := range requests {
 		if reqTime.After(cutoff) {
 			start = i
@@ -84,7 +87,7 @@ func (rl *RateLimiter) cleanup(clientID string, now time.Time) {
 	rl.requests[clientID] = requests[start:]
 }
 
-// getClientIdentifier obtém um identificador único para o cliente
+// getClientIdentifier obtém um identificador único para o cliente.
 func getClientIdentifier(c *gin.Context) string {
 	// Tentar obter user ID se estiver autenticado
 	if userID, exists := c.Get("user_id"); exists {
@@ -97,7 +100,7 @@ func getClientIdentifier(c *gin.Context) string {
 	return "ip:" + c.ClientIP()
 }
 
-// GetRemainingRequests retorna o número de requisições restantes
+// GetRemainingRequests retorna o número de requisições restantes.
 func (rl *RateLimiter) GetRemainingRequests(clientID string) int {
 	rl.mutex.RLock()
 	defer rl.mutex.RUnlock()
@@ -108,6 +111,7 @@ func (rl *RateLimiter) GetRemainingRequests(clientID string) int {
 
 	// Contar requisições dentro da janela
 	count := 0
+
 	for _, reqTime := range requests {
 		if reqTime.After(cutoff) {
 			count++
@@ -117,7 +121,7 @@ func (rl *RateLimiter) GetRemainingRequests(clientID string) int {
 	return rl.limit - count
 }
 
-// GetResetTime retorna o tempo até o reset do rate limit
+// GetResetTime retorna o tempo até o reset do rate limit.
 func (rl *RateLimiter) GetResetTime(clientID string) time.Time {
 	rl.mutex.RLock()
 	defer rl.mutex.RUnlock()
@@ -129,5 +133,6 @@ func (rl *RateLimiter) GetResetTime(clientID string) time.Time {
 
 	// Retornar o tempo da requisição mais antiga + janela
 	oldest := requests[0]
+
 	return oldest.Add(rl.window)
 }

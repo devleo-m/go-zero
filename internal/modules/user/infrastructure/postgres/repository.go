@@ -5,22 +5,23 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/devleo-m/go-zero/internal/modules/user/domain"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/devleo-m/go-zero/internal/modules/user/domain"
 )
 
-// Repository implementa domain.Repository usando GORM
+// Repository implementa domain.Repository usando GORM.
 type Repository struct {
 	db *gorm.DB
 }
 
-// NewRepository cria uma nova instância do repositório
+// NewRepository cria uma nova instância do repositório.
 func NewRepository(db *gorm.DB) *Repository {
 	return &Repository{db: db}
 }
 
-// Create cria um novo usuário
+// Create cria um novo usuário.
 func (r *Repository) Create(ctx context.Context, user *domain.User) error {
 	model := toModel(user)
 
@@ -30,10 +31,11 @@ func (r *Repository) Create(ctx context.Context, user *domain.User) error {
 
 	// Atualizar o ID gerado
 	user.ID = model.ID
+
 	return nil
 }
 
-// GetByID busca um usuário por ID (excluindo deletados)
+// GetByID busca um usuário por ID (excluindo deletados).
 func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	var model UserModel
 
@@ -43,13 +45,14 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, e
 		if err == gorm.ErrRecordNotFound {
 			return nil, domain.ErrUserNotFound
 		}
+
 		return nil, fmt.Errorf("failed to get user by ID: %w", err)
 	}
 
 	return toDomain(&model), nil
 }
 
-// GetByEmail busca um usuário por email (excluindo deletados)
+// GetByEmail busca um usuário por email (excluindo deletados).
 func (r *Repository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var model UserModel
 
@@ -59,13 +62,14 @@ func (r *Repository) GetByEmail(ctx context.Context, email string) (*domain.User
 		if err == gorm.ErrRecordNotFound {
 			return nil, domain.ErrUserNotFound
 		}
+
 		return nil, fmt.Errorf("failed to get user by email: %w", err)
 	}
 
 	return toDomain(&model), nil
 }
 
-// List lista usuários com paginação (excluindo deletados)
+// List lista usuários com paginação (excluindo deletados).
 func (r *Repository) List(ctx context.Context, limit, offset int) ([]*domain.User, error) {
 	var models []UserModel
 
@@ -85,19 +89,21 @@ func (r *Repository) List(ctx context.Context, limit, offset int) ([]*domain.Use
 	return users, nil
 }
 
-// Count conta o total de usuários (excluindo deletados)
+// Count conta o total de usuários (excluindo deletados).
 func (r *Repository) Count(ctx context.Context) (int64, error) {
 	var count int64
+
 	err := r.db.WithContext(ctx).Model(&UserModel{}).
 		Where("deleted_at IS NULL").
 		Count(&count).Error
 	if err != nil {
 		return 0, fmt.Errorf("failed to count users: %w", err)
 	}
+
 	return count, nil
 }
 
-// Update atualiza um usuário
+// Update atualiza um usuário.
 func (r *Repository) Update(ctx context.Context, user *domain.User) error {
 	model := toModel(user)
 
@@ -108,21 +114,23 @@ func (r *Repository) Update(ctx context.Context, user *domain.User) error {
 	return nil
 }
 
-// Delete deleta um usuário (soft delete)
+// Delete deleta um usuário (soft delete).
 func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
 	now := time.Now()
+
 	err := r.db.WithContext(ctx).Model(&UserModel{}).
 		Where("id = ?", id).
 		Update("deleted_at", now).Error
 	if err != nil {
 		return fmt.Errorf("failed to delete user: %w", err)
 	}
+
 	return nil
 }
 
-// toModel converte domain.User para UserModel
+// toModel converte domain.User para UserModel.
 func toModel(user *domain.User) *UserModel {
-	return &UserModel{
+	model := &UserModel{
 		ID:        user.ID,
 		Name:      user.Name,
 		Email:     user.Email,
@@ -132,11 +140,20 @@ func toModel(user *domain.User) *UserModel {
 		Status:    user.Status,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
-		DeletedAt: gorm.DeletedAt{},
 	}
+
+	// Converter DeletedAt corretamente
+	if user.DeletedAt != nil {
+		model.DeletedAt = gorm.DeletedAt{
+			Time:  *user.DeletedAt,
+			Valid: true,
+		}
+	}
+
+	return model
 }
 
-// toDomain converte UserModel para domain.User
+// toDomain converte UserModel para domain.User.
 func toDomain(model *UserModel) *domain.User {
 	var deletedAt *time.Time
 	if model.DeletedAt.Valid {

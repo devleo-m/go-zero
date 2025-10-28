@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// SetupRoutes configura as rotas para usuários
+// SetupRoutes configura as rotas para usuários.
 func SetupRoutes(router *gin.Engine, handler *Handler) {
 	v1 := router.Group("/api/v1")
 	{

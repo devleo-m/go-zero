@@ -76,12 +76,13 @@ func (l *Logger) WithFields(fields ...zap.Field) *Logger {
 	return &Logger{Logger: l.Logger.With(fields...)}
 }
 
-// WithFieldsFromMap cria campos zap a partir de um map
+// WithFieldsFromMap cria campos zap a partir de um map.
 func (l *Logger) WithFieldsFromMap(fields map[string]interface{}) *Logger {
 	zapFields := make([]zap.Field, 0, len(fields))
 	for k, v := range fields {
 		zapFields = append(zapFields, zap.Any(k, v))
 	}
+
 	return &Logger{Logger: l.Logger.With(zapFields...)}
 }
 
@@ -132,7 +133,7 @@ func (l *Logger) WithCacheOperation(operation, key string, hit bool) *Logger {
 	)
 }
 
-// Métodos de conveniência para logging comum
+// Métodos de conveniência para logging comum.
 func (l *Logger) Info(msg string, fields ...zap.Field) {
 	l.Logger.Info(msg, fields...)
 }
@@ -153,7 +154,7 @@ func (l *Logger) Fatal(msg string, fields ...zap.Field) {
 	l.Logger.Fatal(msg, fields...)
 }
 
-// Sync garante que todos os logs sejam escritos
+// Sync garante que todos os logs sejam escritos.
 func (l *Logger) Sync() error {
 	return l.Logger.Sync()
 }

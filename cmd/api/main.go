@@ -3,16 +3,17 @@ package main
 import (
 	"log"
 
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+
 	"github.com/devleo-m/go-zero/internal/infrastructure"
 	"github.com/devleo-m/go-zero/internal/infrastructure/config"
 	"github.com/devleo-m/go-zero/internal/infrastructure/http/middleware"
 	"github.com/devleo-m/go-zero/internal/infrastructure/http/routes"
 	"github.com/devleo-m/go-zero/internal/infrastructure/logger"
 	userApp "github.com/devleo-m/go-zero/internal/modules/user/application"
+	userHttp "github.com/devleo-m/go-zero/internal/modules/user/infrastructure/http"
 	userRepo "github.com/devleo-m/go-zero/internal/modules/user/infrastructure/postgres"
-	userHttp "github.com/devleo-m/go-zero/internal/modules/user/presentation/http"
-	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 )
 
 func main() {
@@ -23,26 +24,66 @@ func main() {
 	}
 
 	// Configurar logger
+	appLogger := setupLogger()
+	defer syncLogger(appLogger)
+
+	logAppStart(appLogger, cfg)
+
+	// Configurar Gin mode
+	configureGinMode(cfg.App.Env)
+
+	// Conectar ao banco de dados
+	db := setupDatabase(cfg, appLogger)
+	defer closeDatabase(db, appLogger)
+
+	appLogger.Info("Database connected successfully",
+		zap.String("component", "database"),
+	)
+
+	// Configurar handlers e rotas
+	router := setupRouter(cfg, db)
+
+	// Iniciar servidor
+	startServer(router, cfg.App.Port, appLogger)
+}
+
+// setupLogger inicializa e retorna o logger.
+func setupLogger() *logger.Logger {
 	appLogger, err := logger.NewFromEnv()
 	if err != nil {
 		log.Fatal("Failed to initialize logger:", err)
 	}
-	defer appLogger.Sync()
 
+	return appLogger
+}
+
+// syncLogger sincroniza o logger antes de encerrar.
+func syncLogger(appLogger *logger.Logger) {
+	if syncErr := appLogger.Sync(); syncErr != nil {
+		log.Printf("Failed to sync logger: %v", syncErr)
+	}
+}
+
+// logAppStart registra o início da aplicação.
+func logAppStart(appLogger *logger.Logger, cfg *config.Config) {
 	appLogger.Info("Starting GO ZERO API",
 		zap.String("app_name", cfg.App.Name),
 		zap.String("version", cfg.App.Version),
 		zap.String("environment", cfg.App.Env),
 	)
+}
 
-	// Configurar Gin
-	if cfg.App.Env == "production" {
+// configureGinMode configura o modo do Gin baseado no ambiente.
+func configureGinMode(env string) {
+	if env == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	} else {
 		gin.SetMode(gin.DebugMode)
 	}
+}
 
-	// Conectar ao banco de dados
+// setupDatabase conecta ao banco de dados e retorna a conexão.
+func setupDatabase(cfg *config.Config, appLogger *logger.Logger) *infrastructure.Database {
 	dsn := cfg.Database.URL
 	if dsn == "" {
 		dsn = buildDatabaseURL(cfg.Database)
@@ -55,12 +96,22 @@ func main() {
 			zap.String("component", "database"),
 		)
 	}
-	defer db.Close()
 
-	appLogger.Info("Database connected successfully",
-		zap.String("component", "database"),
-	)
+	return db
+}
 
+// closeDatabase fecha a conexão com o banco de dados.
+func closeDatabase(db *infrastructure.Database, appLogger *logger.Logger) {
+	if closeErr := db.Close(); closeErr != nil {
+		appLogger.Error("Failed to close database connection",
+			zap.Error(closeErr),
+			zap.String("component", "database"),
+		)
+	}
+}
+
+// setupRouter configura e retorna o router com todas as rotas.
+func setupRouter(cfg *config.Config, db *infrastructure.Database) *gin.Engine {
 	// Configurar repositórios
 	userRepository := userRepo.NewRepository(db.DB)
 
@@ -100,8 +151,11 @@ func main() {
 
 	routes.SetupRoutes(router, routesConfig)
 
-	// Iniciar servidor
-	port := cfg.App.Port
+	return router
+}
+
+// startServer inicia o servidor HTTP.
+func startServer(router *gin.Engine, port string, appLogger *logger.Logger) {
 	if port == "" {
 		port = "8080"
 	}
@@ -119,7 +173,7 @@ func main() {
 	}
 }
 
-// buildDatabaseURL constrói a URL do banco de dados
+// buildDatabaseURL constrói a URL do banco de dados.
 func buildDatabaseURL(dbCfg config.DatabaseConfig) string {
 	return "host=" + dbCfg.Host +
 		" user=" + dbCfg.User +

@@ -8,17 +8,17 @@ import (
 )
 
 type Config struct {
-	App       AppConfig
 	Database  DatabaseConfig
+	MongoDB   MongoDBConfig
 	Redis     RedisConfig
-	JWT       JWTConfig
 	MinIO     MinIOConfig
 	SMTP      SMTPConfig
+	App       AppConfig
 	Stripe    StripeConfig
-	MongoDB   MongoDBConfig
-	RateLimit RateLimitConfig
-	CORS      CORSConfig
 	Logger    LoggerConfig
+	CORS      CORSConfig
+	JWT       JWTConfig
+	RateLimit RateLimitConfig
 }
 
 type AppConfig struct {
@@ -42,8 +42,8 @@ type RedisConfig struct {
 	Host     string
 	Port     string
 	Password string
-	DB       int
 	URL      string
+	DB       int
 }
 
 type JWTConfig struct {
@@ -56,16 +56,16 @@ type MinIOConfig struct {
 	Endpoint  string
 	AccessKey string
 	SecretKey string
-	UseSSL    bool
 	Bucket    string
+	UseSSL    bool
 }
 
 type SMTPConfig struct {
 	Host     string
-	Port     int
 	User     string
 	Password string
 	From     string
+	Port     int
 }
 
 type StripeConfig struct {
@@ -175,6 +175,7 @@ func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
+
 	return defaultValue
 }
 
@@ -184,6 +185,7 @@ func getEnvAsInt(key string, defaultValue int) int {
 			return intValue
 		}
 	}
+
 	return defaultValue
 }
 
@@ -193,6 +195,7 @@ func getEnvAsBool(key string, defaultValue bool) bool {
 			return boolValue
 		}
 	}
+
 	return defaultValue
 }
 
@@ -202,6 +205,7 @@ func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
 			return duration
 		}
 	}
+
 	return defaultValue
 }
 
@@ -212,7 +216,9 @@ func getEnvAsSlice(key string, defaultValue []string) []string {
 		for i, v := range values {
 			values[i] = strings.TrimSpace(v)
 		}
+
 		return values
 	}
+
 	return defaultValue
 }

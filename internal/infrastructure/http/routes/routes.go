@@ -1,12 +1,13 @@
 package routes
 
 import (
+	"github.com/gin-gonic/gin"
+
 	"github.com/devleo-m/go-zero/internal/infrastructure/http/middleware"
 	"github.com/devleo-m/go-zero/internal/shared/response"
-	"github.com/gin-gonic/gin"
 )
 
-// SetupRoutes configura todas as rotas da aplicação
+// SetupRoutes configura todas as rotas da aplicação.
 func SetupRoutes(router *gin.Engine, config *Config) {
 	// Middleware global
 	router.Use(middleware.LoggingMiddleware(nil))
@@ -34,19 +35,13 @@ func SetupRoutes(router *gin.Engine, config *Config) {
 	// API v1
 	v1 := router.Group("/api/v1")
 	{
-		// Rotas públicas
-		// public := v1.Group("/")
-		// {
-		// 	// Auth routes (será implementado)
-		// 	// public.POST("/auth/register", authHandler.Register)
-		// 	// public.POST("/auth/login", authHandler.Login)
-		// }
-
-		// Rotas protegidas
-		protected := v1.Group("/")
-		protected.Use(middleware.AuthMiddleware(config.JWT.Secret))
+		// Rotas públicas (sem autenticação)
+		public := v1.Group("/")
 		{
-			// User routes
+			// Auth routes (será implementado)
+			// public.POST("/auth/register", authHandler.Register)
+			// public.POST("/auth/login", authHandler.Login)
+			// User routes (públicas para desenvolvimento/aprendizado)
 			if config.UserHandler != nil {
 				if userHandler, ok := config.UserHandler.(interface {
 					CreateUser(*gin.Context)
@@ -55,7 +50,7 @@ func SetupRoutes(router *gin.Engine, config *Config) {
 					UpdateUser(*gin.Context)
 					DeleteUser(*gin.Context)
 				}); ok {
-					userRoutes := protected.Group("/users")
+					userRoutes := public.Group("/users")
 					{
 						userRoutes.POST("", userHandler.CreateUser)
 						userRoutes.GET("", userHandler.ListUsers)
@@ -65,7 +60,12 @@ func SetupRoutes(router *gin.Engine, config *Config) {
 					}
 				}
 			}
+		}
 
+		// Rotas protegidas (com autenticação - para futuro)
+		protected := v1.Group("/")
+		protected.Use(middleware.AuthMiddleware(config.JWT.Secret))
+		{
 			// Admin routes
 			admin := protected.Group("/admin")
 			admin.Use(middleware.RequireRole("admin"))
@@ -86,7 +86,7 @@ func SetupRoutes(router *gin.Engine, config *Config) {
 	router.GET("/swagger/*any", swaggerHandler)
 }
 
-// healthCheck retorna o status de saúde da aplicação
+// healthCheck retorna o status de saúde da aplicação.
 func healthCheck(c *gin.Context) {
 	response.Success(c, gin.H{
 		"status":    "ok",
@@ -99,7 +99,7 @@ func healthCheck(c *gin.Context) {
 	}, "Service is healthy")
 }
 
-// metricsHandler retorna métricas da aplicação
+// metricsHandler retorna métricas da aplicação.
 func metricsHandler(c *gin.Context) {
 	// Aqui você pode implementar métricas customizadas
 	// Por enquanto, retornamos um placeholder
@@ -108,7 +108,7 @@ func metricsHandler(c *gin.Context) {
 	})
 }
 
-// adminStats retorna estatísticas administrativas
+// adminStats retorna estatísticas administrativas.
 func adminStats(c *gin.Context) {
 	response.Success(c, gin.H{
 		"users": gin.H{
@@ -122,7 +122,7 @@ func adminStats(c *gin.Context) {
 	}, "Admin statistics")
 }
 
-// chatWebSocket lida com conexões WebSocket para chat
+// chatWebSocket lida com conexões WebSocket para chat.
 func chatWebSocket(c *gin.Context) {
 	// Implementação do WebSocket será feita posteriormente
 	c.JSON(501, gin.H{
@@ -130,7 +130,7 @@ func chatWebSocket(c *gin.Context) {
 	})
 }
 
-// swaggerHandler serve a documentação Swagger
+// swaggerHandler serve a documentação Swagger.
 func swaggerHandler(c *gin.Context) {
 	// Implementação do Swagger será feita posteriormente
 	c.JSON(501, gin.H{
@@ -138,12 +138,12 @@ func swaggerHandler(c *gin.Context) {
 	})
 }
 
-// Config representa a configuração das rotas
+// Config representa a configuração das rotas.
 type Config struct {
+	RateLimiter interface{}
+	UserHandler interface{}
 	JWT         JWTConfig
 	CORS        CORSConfig
-	RateLimiter interface{} // *middleware.RateLimiter
-	UserHandler interface{} // *userHttp.Handler
 }
 
 type JWTConfig struct {
