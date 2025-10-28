@@ -7,6 +7,7 @@
 
 ### ✅ **1. Movido HTTP de Presentation para Infrastructure**
 
+
 **Antes:**
 ```
 internal/modules/user/
