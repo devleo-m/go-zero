@@ -4,3 +4,4 @@
 
 -- Drop table (this will also drop indexes and foreign key constraints)
 DROP TABLE IF EXISTS cities CASCADE;
+

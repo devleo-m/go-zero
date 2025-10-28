@@ -59,59 +59,59 @@ INSERT INTO cities (name, state_id) VALUES
 ('Poços de Caldas', 3)
 ON CONFLICT DO NOTHING;
 
--- Insert major cities for California (state_id = 16)
+-- Insert major cities for California (state_id = 28)
 INSERT INTO cities (name, state_id) VALUES 
-('Los Angeles', 16),
-('San Francisco', 16),
-('San Diego', 16),
-('San Jose', 16),
-('Fresno', 16),
-('Sacramento', 16),
-('Long Beach', 16),
-('Oakland', 16),
-('Bakersfield', 16),
-('Anaheim', 16),
-('Santa Ana', 16),
-('Riverside', 16),
-('Stockton', 16),
-('Irvine', 16),
-('Chula Vista', 16)
+('Los Angeles', 28),
+('San Francisco', 28),
+('San Diego', 28),
+('San Jose', 28),
+('Fresno', 28),
+('Sacramento', 28),
+('Long Beach', 28),
+('Oakland', 28),
+('Bakersfield', 28),
+('Anaheim', 28),
+('Santa Ana', 28),
+('Riverside', 28),
+('Stockton', 28),
+('Irvine', 28),
+('Chula Vista', 28)
 ON CONFLICT DO NOTHING;
 
--- Insert major cities for Texas (state_id = 17)
+-- Insert major cities for Texas (state_id = 29)
 INSERT INTO cities (name, state_id) VALUES 
-('Houston', 17),
-('Dallas', 17),
-('Austin', 17),
-('San Antonio', 17),
-('Fort Worth', 17),
-('El Paso', 17),
-('Arlington', 17),
-('Corpus Christi', 17),
-('Plano', 17),
-('Lubbock', 17),
-('Laredo', 17),
-('Lubbock', 17),
-('Garland', 17),
-('Irving', 17),
-('Amarillo', 17)
+('Houston', 29),
+('Dallas', 29),
+('Austin', 29),
+('San Antonio', 29),
+('Fort Worth', 29),
+('El Paso', 29),
+('Arlington', 29),
+('Corpus Christi', 29),
+('Plano', 29),
+('Lubbock', 29),
+('Laredo', 29),
+('Garland', 29),
+('Irving', 29),
+('Amarillo', 29)
 ON CONFLICT DO NOTHING;
 
--- Insert major cities for Ontario (state_id = 26)
+-- Insert major cities for Ontario (state_id = 48)
 INSERT INTO cities (name, state_id) VALUES 
-('Toronto', 26),
-('Ottawa', 26),
-('Mississauga', 26),
-('Brampton', 26),
-('Hamilton', 26),
-('London', 26),
-('Markham', 26),
-('Vaughan', 26),
-('Kitchener', 26),
-('Windsor', 26),
-('Richmond Hill', 26),
-('Oakville', 26),
-('Burlington', 26),
-('Oshawa', 26),
-('Barrie', 26)
+('Toronto', 48),
+('Ottawa', 48),
+('Mississauga', 48),
+('Brampton', 48),
+('Hamilton', 48),
+('London', 48),
+('Markham', 48),
+('Vaughan', 48),
+('Kitchener', 48),
+('Windsor', 48),
+('Richmond Hill', 48),
+('Oakville', 48),
+('Burlington', 48),
+('Oshawa', 48),
+('Barrie', 48)
 ON CONFLICT DO NOTHING;
+

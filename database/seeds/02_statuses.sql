@@ -9,3 +9,4 @@ INSERT INTO statuses (name, description) VALUES
 ('pending', 'User account is pending approval'),
 ('suspended', 'User account is suspended due to violations')
 ON CONFLICT (name) DO NOTHING;
+

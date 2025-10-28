@@ -9,3 +9,4 @@ INSERT INTO roles (name, description) VALUES
 ('moderator', 'Moderator with content management permissions'),
 ('super_admin', 'Super administrator with full system access')
 ON CONFLICT (name) DO NOTHING;
+

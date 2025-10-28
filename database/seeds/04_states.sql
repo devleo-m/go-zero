@@ -70,3 +70,4 @@ INSERT INTO states (name, country_id, code) VALUES
 ('Newfoundland and Labrador', 3, 'NL'),
 ('Prince Edward Island', 3, 'PE')
 ON CONFLICT DO NOTHING;
+

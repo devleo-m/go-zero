@@ -4,3 +4,4 @@
 
 -- Drop table (this will also drop indexes)
 DROP TABLE IF EXISTS countries CASCADE;
+

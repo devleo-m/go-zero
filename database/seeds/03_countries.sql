@@ -13,10 +13,6 @@ INSERT INTO countries (name, code) VALUES
 ('Colombia', 'COL'),
 ('Peru', 'PER'),
 ('Uruguay', 'URY'),
-('Paraguay', 'PRY'),
-('Bolivia', 'BOL'),
-('Ecuador', 'ECU'),
-('Venezuela', 'VEN'),
-('Guyana', 'GUY'),
-('Suriname', 'SUR')
+('Paraguay', 'PRY')
 ON CONFLICT (code) DO NOTHING;
+
