@@ -135,12 +135,12 @@ docker-logs: ## Mostra logs dos containers
 migrate-up: ## Executa migrations para cima
 	@echo "$(BLUE)📊 Executando migrations...$(NC)"
 	@echo "$(YELLOW)================================================$(NC)"
-	@migrate -path database/migrations -database "postgres://postgres:postgres@localhost:5432/go_zero?sslmode=disable" up
+	@migrate -path database/migrations -database "postgres://postgres:postgres123@localhost:5432/go_zero_dev?sslmode=disable" up
 
 migrate-down: ## Executa migrations para baixo
 	@echo "$(BLUE)📊 Revertendo migrations...$(NC)"
 	@echo "$(YELLOW)================================================$(NC)"
-	@migrate -path database/migrations -database "postgres://postgres:postgres@localhost:5432/go_zero?sslmode=disable" down
+	@migrate -path database/migrations -database "postgres://postgres:postgres123@localhost:5432/go_zero_dev?sslmode=disable" down
 
 migrate-create: ## Cria nova migration (use: make migrate-create NAME=nome_da_migration)
 	@echo "$(BLUE)📊 Criando nova migration...$(NC)"
