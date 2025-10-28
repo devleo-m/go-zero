@@ -1,2 +1,29 @@
+# Env
 .env
-cursor
+
+# Build
+bin/
+dist/
+*.exe
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temp
+tmp/
+temp/
+
+# Cursor
+.cursor
+
+#commands
+commands
+00-curso

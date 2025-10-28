@@ -1,97 +1,44 @@
-# ===========================================
-# GO ZERO - CONFIGURAÇÃO DO AIR (HOT-RELOAD)
-# ===========================================
-
-# Diretório raiz do projeto
 root = "."
-
-# Pasta temporária para binários compilados
+testdata_dir = "testdata"
 tmp_dir = "tmp"
 
-# ===========================================
-# CONFIGURAÇÕES DE BUILD
-# ===========================================
 [build]
-  # Comando para compilar a aplicação
-  # IMPORTANTE: Especificamos o caminho correto do main.go
-  cmd = "go build -o ./tmp/main.exe ./cmd/server"
-  
-  # Binário gerado (com .exe para Windows)
-  bin = "tmp/main.exe"
-  
-  # Delay entre builds (evita rebuilds desnecessários)
+  args_bin = []
+  bin = "./tmp/main"
+  cmd = "go build -o ./tmp/main ./cmd/api"
   delay = 1000
-  
-  # Para em caso de erro
-  stop_on_error = true
-  
-  # Comando para executar após o build (opcional)
-  post_cmd = []
-  
-  # Comando para executar antes do build (opcional)
-  pre_cmd = []
-
-# ===========================================
-# CONFIGURAÇÕES DE ARQUIVOS
-# ===========================================
-# Diretórios a serem ignorados
-exclude_dir = ["vendor", "node_modules", "testdata", "tmp", "assets", "docs", "tests", "00-guia", "commands", "bin", ".git", ".cursor"]
-
-# Extensões de arquivo a serem monitoradas
-include_ext = ["go", "tpl", "tmpl", "html", "yaml", "yml", "json", "toml", "env"]
-
-# Arquivos específicos a serem ignorados
-exclude_file = ["*.log", "*.tmp"]
-
-# ===========================================
-# CONFIGURAÇÕES DE EXECUÇÃO
-# ===========================================
-[run]
-  # Comando para executar o binário
-  cmd = "./tmp/main.exe"
-  
-  # Delay antes de executar
-  delay = 500
-  
-  # Reinicia automaticamente quando arquivos mudam
-  rerun = true
-  
-  # Envia sinal de interrupção antes de matar o processo
-  send_interrupt = true
-  
-  # Delay após enviar sinal de interrupção
+  exclude_dir = ["assets", "tmp", "vendor", "testdata", "docs", "monitoring"]
+  exclude_file = []
+  exclude_regex = ["_test.go"]
+  exclude_unchanged = false
+  follow_symlink = false
+  full_bin = ""
+  include_dir = []
+  include_ext = ["go", "tpl", "tmpl", "html"]
+  include_file = []
   kill_delay = "0s"
+  log = "build-errors.log"
+  poll = false
+  poll_interval = 0
+  rerun = false
+  rerun_delay = 500
+  send_interrupt = false
+  stop_on_root = false
 
-# ===========================================
-# CONFIGURAÇÕES DE LOG
-# ===========================================
-[log]
-  # Mostra apenas logs da aplicação (não do Air)
-  main_only = false
-  
-  # Silencia todos os logs do Air
-  silent = false
-  
-  # Mostra timestamp nos logs
-  time = false
-
-# ===========================================
-# CONFIGURAÇÕES DE TELA
-# ===========================================
-[screen]
-  # Limpa a tela a cada rebuild
-  clear_on_rebuild = true
-  
-  # Mantém posição do scroll
-  keep_scroll = true
-
-# ===========================================
-# CONFIGURAÇÕES DE CORES
-# ===========================================
 [color]
-  # Cores para diferentes partes do output
-  app = "cyan"
-  build = "yellow" 
+  app = ""
+  build = "yellow"
   main = "magenta"
   runner = "green"
-  watcher = "blue"
+  watcher = "cyan"
+
+[log]
+  main_only = false
+  time = false
+
+[misc]
+  clean_on_exit = false
+
+[screen]
+  clear_on_rebuild = false
+  keep_scroll = true

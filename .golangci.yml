@@ -1,0 +1,507 @@
+# ============================================================================
+# Configuração Go Linter de Nível Corporativo
+# go-zero project - Arquitetura Hexagonal com Gin + GORM + Zap
+# ============================================================================
+
+run:
+  # Timeout para análise
+  timeout: 10m
+  
+  # Diretórios a incluir na análise
+  tests: true
+  
+  # Go version alvo
+  go: "1.25"
+
+output:
+  # Formato: colored-line-number|line-number|json|tab|checkstyle|code-climate
+  formats:
+    - format: colored-line-number
+      path: stdout
+  
+  # Mostrar estatísticas
+  print-issued-lines: true
+  print-linter-name: true
+  sort-results: true
+
+# ============================================================================
+# LINTERS - Configuração com disable-all: true (abordagem whitelist)
+# ============================================================================
+linters:
+  disable-all: true
+  enable:
+    # ========================================================================
+    # [1] FORMATAÇÃO E ORGANIZAÇÃO
+    # ========================================================================
+    - gofumpt           # Formatação mais estrita que gofmt
+    - goimports         # Organização de imports
+    - whitespace        # Detecta espaços em branco desnecessários
+    - wsl               # Whitespace linter (espaçamento entre blocos)
+    
+    # ========================================================================
+    # [2] BUGS E ERROS
+    # ========================================================================
+    - errcheck          # Verifica erros não tratados
+    - staticcheck       # Análise estática avançada (SA*)
+    - govet             # Bugs comuns do Go vet
+    - bodyclose         # HTTP response bodies não fechados
+    - sqlclosecheck     # SQL rows/statements não fechados (GORM)
+    - nilerr            # Retornar nil quando err != nil
+    - nilnil            # Proíbe retornar (nil, nil)
+    - copyloopvar       # Detecta cópias incorretas de variáveis de loop
+    
+    # ========================================================================
+    # [3] SEGURANÇA
+    # ========================================================================
+    - gosec             # Vulnerabilidades de segurança (G*)
+    
+    # ========================================================================
+    # [4] COMPLEXIDADE E QUALIDADE
+    # ========================================================================
+    - gocyclo           # Complexidade ciclomática
+    - funlen            # Tamanho de funções
+    - gocognit          # Complexidade cognitiva
+    - nestif            # Profundidade de ifs aninhados
+    - gochecknoglobals  # Variáveis globais (exceto config)
+    
+    # ========================================================================
+    # [5] ESTILO E BOAS PRÁTICAS
+    # ========================================================================
+    - revive            # Linting de estilo (substitui golint)
+    - ireturn           # Aceitar interfaces, retornar tipos concretos
+    - noctx             # Força uso de context em HTTP requests
+    - unconvert         # Conversões de tipo desnecessárias
+    - unparam           # Parâmetros não utilizados
+    - unused            # Código não utilizado
+    - ineffassign       # Atribuições ineficientes
+    
+    # ========================================================================
+    # [6] PERFORMANCE
+    # ========================================================================
+    - prealloc          # Pre-alocação de slices
+    
+    # ========================================================================
+    # [7] CÓDIGO LIMPO
+    # ========================================================================
+    - forbidigo         # Proíbe patterns específicos (fmt.Print*, log.*)
+    - goconst           # Strings/números repetidos → constantes
+    - misspell          # Erros de digitação
+    - dupword           # Palavras duplicadas em comentários
+    - maintidx          # Índice de manutenibilidade
+    
+    # ========================================================================
+    # [8] TESTES
+    # ========================================================================
+    - testifylint       # Boas práticas com testify
+    - tparallel         # Detecta uso incorreto de t.Parallel()
+    
+    # ========================================================================
+    # [9] COMENTÁRIOS E DOCUMENTAÇÃO
+    # ========================================================================
+    - godot             # Comentários devem terminar com ponto
+    - godox             # Detecta TODO, FIXME, etc.
+
+# ============================================================================
+# CONFIGURAÇÕES ESPECÍFICAS DOS LINTERS
+# ============================================================================
+linters-settings:
+  
+  # --------------------------------------------------------------------------
+  # COMPLEXIDADE CICLOMÁTICA (máximo 10)
+  # --------------------------------------------------------------------------
+  gocyclo:
+    min-complexity: 10
+  
+  # --------------------------------------------------------------------------
+  # COMPLEXIDADE COGNITIVA (máximo 15)
+  # --------------------------------------------------------------------------
+  gocognit:
+    min-complexity: 15
+  
+  # --------------------------------------------------------------------------
+  # TAMANHO DE FUNÇÕES
+  # --------------------------------------------------------------------------
+  funlen:
+    lines: 80           # Máximo de linhas por função
+    statements: 50      # Máximo de statements por função
+    ignore-comments: true
+  
+  # --------------------------------------------------------------------------
+  # IFS ANINHADOS (máximo 4 níveis)
+  # --------------------------------------------------------------------------
+  nestif:
+    min-complexity: 4
+  
+  # --------------------------------------------------------------------------
+  # REVIVE - Regras de Estilo
+  # --------------------------------------------------------------------------
+  revive:
+    severity: warning
+    confidence: 0.8
+    rules:
+      # Nomenclatura
+      - name: var-naming
+        severity: warning
+        arguments:
+          - ["ID", "URL", "HTTP", "API", "UUID", "SQL", "JSON", "XML", "HTML", "JWT"]
+      
+      - name: exported
+        severity: warning
+        arguments:
+          - "checkPrivateReceivers"
+          - "sayRepetitiveInsteadOfStutters"
+      
+      # Retornos e Erros
+      - name: error-return
+        severity: error
+      - name: error-naming
+        severity: warning
+      - name: error-strings
+        severity: warning
+      - name: errorf
+        severity: warning
+      
+      # Context
+      - name: context-as-argument
+        severity: error
+        arguments:
+          - allowTypesBefore: "*testing.T"
+      - name: context-keys-type
+        severity: error
+      
+      # Estrutura
+      - name: receiver-naming
+        severity: warning
+      - name: unexported-return
+        severity: warning
+      - name: indent-error-flow
+        severity: warning
+      - name: early-return
+        severity: warning
+      
+      # Limpeza
+      - name: unused-parameter
+        severity: warning
+      - name: unused-receiver
+        severity: warning
+      - name: useless-break
+        severity: warning
+      - name: superfluous-else
+        severity: warning
+      
+      # Boas práticas
+      - name: defer
+        severity: warning
+      - name: range-val-in-closure
+        severity: error
+      - name: range-val-address
+        severity: error
+  
+  # --------------------------------------------------------------------------
+  # IRETURN - Retornar tipos concretos, não interfaces
+  # --------------------------------------------------------------------------
+  ireturn:
+    allow:
+      - anon
+      - error
+      - empty
+      - stdlib
+      - generic
+      # Interfaces específicas permitidas do projeto
+      - ".*Repository"
+      - ".*Service"
+      - ".*UseCase"
+      - "gin.HandlerFunc"
+  
+  # --------------------------------------------------------------------------
+  # FORBIDIGO - Proibir patterns (fmt.Print*, log.*, panic)
+  # --------------------------------------------------------------------------
+  forbidigo:
+    forbid:
+      # Proibir prints não estruturados
+      - p: ^fmt\.Print.*$
+        msg: "❌ Use logger.Info/Debug ao invés de fmt.Print. Exemplo: logger.Info(\"mensagem\", zap.String(\"key\", value))"
+      
+      - p: ^log\.Print.*$
+        msg: "❌ Use logger estruturado (zap) ao invés de log.Print"
+      
+      - p: ^print\($
+        msg: "❌ Use logger estruturado ao invés de print"
+      
+      - p: ^println\($
+        msg: "❌ Use logger estruturado ao invés de println"
+      
+      # Proibir panic (exceto em init e testes)
+      - p: ^panic\($
+        msg: "⚠️  Evite panic. Retorne erros adequadamente. Panic só deve ser usado em situações irrecuperáveis."
+    
+    exclude-godoc-examples: true
+    analyze-types: true
+  
+  # --------------------------------------------------------------------------
+  # GOCONST - Detectar strings/números mágicos
+  # --------------------------------------------------------------------------
+  goconst:
+    min-len: 3              # Mínimo 3 caracteres
+    min-occurrences: 3      # Mínimo 3 ocorrências
+    ignore-tests: true
+    match-constant: true
+    numbers: true           # Também detectar números mágicos
+    ignore-strings: ""
+    ignore-calls: true
+  
+  # --------------------------------------------------------------------------
+  # GOSEC - Segurança
+  # --------------------------------------------------------------------------
+  gosec:
+    severity: medium
+    confidence: medium
+    excludes:
+      - G104  # Erros não tratados (já coberto por errcheck)
+      - G107  # Potential HTTP request made with variable url (muito restritivo)
+    config:
+      global:
+        nosec: false
+        show-ignored: false
+        audit: false
+  
+  # --------------------------------------------------------------------------
+  # ERRCHECK - Verificação de erros
+  # --------------------------------------------------------------------------
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    disable-default-exclusions: false
+    exclude-functions:
+      - (*database/sql.DB).Close
+      - (*database/sql.Rows).Close
+      - (*os.File).Close
+      - (io.Closer).Close
+  
+  # --------------------------------------------------------------------------
+  # GOVET - Análise estática
+  # --------------------------------------------------------------------------
+  govet:
+    enable-all: true
+    disable:
+      - shadow      # Variáveis sombreadas (muito restritivo)
+    settings:
+      printf:
+        funcs:
+          - (github.com/devleo-m/go-zero/internal/infrastructure/logger.Logger).Debug
+          - (github.com/devleo-m/go-zero/internal/infrastructure/logger.Logger).Info
+          - (github.com/devleo-m/go-zero/internal/infrastructure/logger.Logger).Warn
+          - (github.com/devleo-m/go-zero/internal/infrastructure/logger.Logger).Error
+  
+  # --------------------------------------------------------------------------
+  # GOFUMPT - Formatação mais estrita
+  # --------------------------------------------------------------------------
+  gofumpt:
+    extra-rules: true
+    module-path: github.com/devleo-m/go-zero
+  
+  # --------------------------------------------------------------------------
+  # GOIMPORTS - Organização de imports
+  # --------------------------------------------------------------------------
+  goimports:
+    local-prefixes: github.com/devleo-m/go-zero
+  
+  # --------------------------------------------------------------------------
+  # MISSPELL - Correção ortográfica
+  # --------------------------------------------------------------------------
+  misspell:
+    locale: US
+    ignore-words:
+      - cancelled
+  
+  # --------------------------------------------------------------------------
+  # WHITESPACE - Espaços em branco
+  # --------------------------------------------------------------------------
+  whitespace:
+    multi-if: true
+    multi-func: true
+  
+  # --------------------------------------------------------------------------
+  # GODOT - Comentários com pontuação correta
+  # --------------------------------------------------------------------------
+  godot:
+    scope: declarations
+    exclude:
+      - "^TODO:"
+      - "^FIXME:"
+      - "^NOTE:"
+    capital: true
+  
+  # --------------------------------------------------------------------------
+  # GODOX - Detectar TODOs, FIXMEs
+  # --------------------------------------------------------------------------
+  godox:
+    keywords:
+      - TODO
+      - FIXME
+      - BUG
+      - HACK
+      - XXX
+      - OPTIMIZE
+  
+  # --------------------------------------------------------------------------
+  # GOCHECKNOGLOBALS - Variáveis globais
+  # --------------------------------------------------------------------------
+  gochecknoglobals:
+    # Permitir apenas em arquivos de configuração
+    ignore-names:
+      - DB
+      - Logger
+      - Config
+      - Version
+      - BuildTime
+
+# ============================================================================
+# EXCLUSÕES E REGRAS ESPECIAIS
+# ============================================================================
+issues:
+  # Número máximo de issues (0 = ilimitado)
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  
+  # Mostrar apenas novos issues
+  new: false
+  
+  # Corrigir issues automaticamente quando possível
+  fix: false
+  
+  exclude-use-default: false
+  
+  # Diretórios a excluir
+  exclude-dirs:
+    - vendor
+    - docs
+    - scripts
+    - tmp
+    - .air
+    - 00-curso
+  
+  # Arquivos a excluir
+  exclude-files:
+    - ".*\\.pb\\.go$"
+    - ".*\\.gen\\.go$"
+  
+  # Unificar por linha
+  uniq-by-line: true
+  
+  # --------------------------------------------------------------------------
+  # EXCLUSÕES POR PATH/ARQUIVO
+  # --------------------------------------------------------------------------
+  exclude-rules:
+    # ========================================================================
+    # TESTES - Regras mais relaxadas
+    # ========================================================================
+    - path: _test\.go
+      linters:
+        - forbidigo       # Permitir fmt.Print em testes
+        - funlen          # Funções de teste podem ser longas
+        - gocyclo         # Complexidade em testes é ok
+        - gocognit        # Complexidade cognitiva em testes
+        - gochecknoglobals # Variáveis globais em testes
+        - maintidx        # Índice de manutenibilidade
+        - err113          # Erros dinâmicos em testes
+    
+    # ========================================================================
+    # HANDLERS HTTP - Podem ser maiores
+    # ========================================================================
+    - path: internal/.*/http/handler\.go
+      linters:
+        - funlen
+        - gocyclo
+      text: "(Function|Cyclomatic complexity)"
+    
+    # ========================================================================
+    # MIDDLEWARES - Podem ter lógica complexa
+    # ========================================================================
+    - path: internal/.*/middleware/.*\.go
+      linters:
+        - funlen
+        - gocognit
+        - revive
+      text: "(Function|unused-parameter)"
+    
+    # ========================================================================
+    # DTOs - Podem retornar interfaces
+    # ========================================================================
+    - path: internal/.*/http/dto\.go
+      linters:
+        - ireturn
+        - revive
+      text: "exported.*should have comment"
+    
+    # ========================================================================
+    # MIGRATIONS - Podem ter queries longas
+    # ========================================================================
+    - path: database/migrations/.*\.go
+      linters:
+        - gosec
+        - goconst
+    
+    # ========================================================================
+    # MAIN.GO - Pode ter init e globals
+    # ========================================================================
+    - path: cmd/.*/main\.go
+      linters:
+        - gochecknoglobals
+        - forbidigo
+    
+    # ========================================================================
+    # REPOSITORIES - GORM específico
+    # ========================================================================
+    - path: internal/.*/postgres/repository\.go
+      linters:
+        - wrapcheck       # GORM retorna erros que não precisamos wrap
+    
+    # ========================================================================
+    # GENERATED CODE - Ignorar completamente
+    # ========================================================================
+    - path: \.gen\.go$
+      linters:
+        - all
+    
+    - path: \.pb\.go$
+      linters:
+        - all
+  
+  # --------------------------------------------------------------------------
+  # EXCLUSÕES POR TEXTO/PATTERN
+  # --------------------------------------------------------------------------
+  exclude:
+    # Comentários de TODOs são permitidos (mas reportados por godox)
+    - "Line contains TODO/BUG/FIXME"
+    
+    # Error strings should not be capitalized (muito restritivo)
+    - "error strings should not be capitalized"
+    
+    # Package comment (às vezes não é necessário)
+    - "should have a package comment"
+    
+    # Underscore em nomes (permitir em testes)
+    - "don't use an underscore in package name"
+
+# ============================================================================
+# SEVERIDADE (Severity)
+# ============================================================================
+severity:
+  default-severity: error
+  case-sensitive: false
+  rules:
+    - linters:
+        - godox
+        - godot
+        - misspell
+        - dupword
+      severity: warning
+    
+    - linters:
+        - errcheck
+        - gosec
+        - govet
+        - staticcheck
+      severity: error
+

@@ -2,104 +2,145 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
+	"os"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/joho/godotenv"
-	"go.uber.org/zap"
+)
 
-	"github.com/devleo-m/go-zero/internal/infra/config"
-	"github.com/devleo-m/go-zero/internal/infra/logger"
+const (
+	defaultDatabaseURL = "postgres://postgres:postgres@localhost:5432/go_zero?sslmode=disable"
+	migrationsPath     = "file://database/migrations"
+	directionUp        = "up"
+	directionDown      = "down"
+	directionForce     = "force"
 )
 
 func main() {
-	// Carregar .env
-	_ = godotenv.Load()
-
 	// Flags
+	direction, steps := parseFlags()
+
+	// Obter URL do banco
+	databaseURL := getDatabaseURL()
+
+	// Executar migration
+	executeMigration(databaseURL, direction, steps)
+}
+
+// parseFlags parse os arguments da linha de commando.
+func parseFlags() (string, int) {
 	var direction string
+
 	var steps int
-	flag.StringVar(&direction, "direction", "up", "Migration direction: up, down, force")
+
+	flag.StringVar(&direction, "direction", directionUp, "Migration direction: up, down, force")
 	flag.IntVar(&steps, "steps", 0, "Number of steps (0 = all)")
 	flag.Parse()
 
-	// Carregar configurações
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		log.Fatalf("❌ Erro ao carregar configurações: %v", err)
+	return direction, steps
+}
+
+// getDatabaseURL obtém a URL do banco de dados.
+func getDatabaseURL() string {
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		databaseURL = defaultDatabaseURL
 	}
 
-	// Inicializar logger
-	if err := logger.InitLogger(logger.Config{
-		Level:  cfg.Logger.Level,
-		Format: cfg.Logger.Format,
-	}); err != nil {
-		log.Fatalf("❌ Erro ao inicializar logger: %v", err)
-	}
-	defer logger.Sync()
+	return databaseURL
+}
 
-	// Configurar migrator
-	migrationsPath := "file://internal/infra/database/migrations"
-	databaseURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=%s",
-		cfg.Database.User,
-		cfg.Database.Password,
-		cfg.Database.Host,
-		cfg.Database.Port,
-		cfg.Database.Name,
-		cfg.Database.SSLMode,
-	)
-
-	logger.Info("🚀 Iniciando migrations",
-		zap.String("direction", direction),
-		zap.Int("steps", steps),
-		zap.String("database", cfg.Database.Name),
-	)
-
+// executeMigration executa a migration.
+func executeMigration(databaseURL, direction string, steps int) {
 	// Criar migrator
-	m, err := migrate.New(migrationsPath, databaseURL)
+	m, err := createMigrator(databaseURL)
 	if err != nil {
-		logger.Fatal("❌ Erro ao criar migrator", err)
+		log.Fatalf("❌ Erro ao criar migrator: %v", err)
 	}
-	defer m.Close()
+	defer closeMigrator(m)
 
-	// Executar migration
-	switch direction {
-	case "up":
-		if steps > 0 {
-			err = m.Steps(steps)
-		} else {
-			err = m.Up()
-		}
-	case "down":
-		if steps > 0 {
-			err = m.Steps(-steps)
-		} else {
-			err = m.Down()
-		}
-	case "force":
-		if steps == 0 {
-			logger.Fatal("❌ Especifique a versão com -steps", nil)
-		}
-		err = m.Force(steps)
-	default:
-		logger.Fatal("❌ Direction inválida: use up, down ou force", nil)
-	}
-
-	// Verificar resultado
-	if err != nil && err != migrate.ErrNoChange {
-		logger.Fatal("❌ Migration falhou", err)
+	// Executar migration baseado na direção
+	err = runMigration(m, direction, steps)
+	if err != nil {
+		handleMigrationError(err)
+		return
 	}
 
 	// Log de sucesso
-	version, dirty, _ := m.Version()
-	logger.Info("✅ Migration executada com sucesso!",
-		zap.Uint("version", version),
-		zap.Bool("dirty", dirty),
-		zap.String("direction", direction),
-	)
+	logSuccess(m, direction)
+}
 
-	fmt.Printf("🎉 Migration %s executada! Versão: %d\n", direction, version)
+// createMigrator cria e retorna um migrator.
+func createMigrator(databaseURL string) (*migrate.Migrate, error) {
+	return migrate.New(migrationsPath, databaseURL)
+}
+
+// closeMigrator fecha o migrator.
+func closeMigrator(m *migrate.Migrate) {
+	if srcErr, dbErr := m.Close(); srcErr != nil || dbErr != nil {
+		log.Printf("⚠️  Erro ao fechar migrator - Source: %v, DB: %v", srcErr, dbErr)
+	}
+}
+
+// runMigration executa a migration baseado na direção.
+func runMigration(m *migrate.Migrate, direction string, steps int) error {
+	switch direction {
+	case directionUp:
+		return runUp(m, steps)
+	case directionDown:
+		return runDown(m, steps)
+	case directionForce:
+		return runForce(m, steps)
+	default:
+		log.Fatal("❌ Direction inválida: use up, down ou force")
+		return nil
+	}
+}
+
+// runUp executa migration para cima.
+func runUp(m *migrate.Migrate, steps int) error {
+	if steps > 0 {
+		return m.Steps(steps)
+	}
+
+	return m.Up()
+}
+
+// runDown executa migration para baixo.
+func runDown(m *migrate.Migrate, steps int) error {
+	if steps > 0 {
+		return m.Steps(-steps)
+	}
+
+	return m.Down()
+}
+
+// runForce força uma versão específica.
+func runForce(m *migrate.Migrate, steps int) error {
+	if steps == 0 {
+		log.Fatal("❌ Especifique a versão com -steps")
+	}
+
+	return m.Force(steps)
+}
+
+// handleMigrationError trata erros de migration.
+func handleMigrationError(err error) {
+	if err != migrate.ErrNoChange {
+		log.Fatalf("❌ Migration falhou: %v", err)
+	}
+}
+
+// logSuccess registra sucesso da migration.
+func logSuccess(m *migrate.Migrate, direction string) {
+	version, dirty, err := m.Version()
+	if err != nil {
+		log.Printf("⚠️  Não foi possível obter versão: %v", err)
+		return
+	}
+
+	log.Printf("✅ Migration executada com sucesso! Versão: %d, Dirty: %v", version, dirty)
+	log.Printf("🎉 Migration %s executada! Versão: %d", direction, version)
 }

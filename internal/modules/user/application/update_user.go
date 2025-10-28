@@ -1,0 +1,59 @@
+package application
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/google/uuid"
+
+	"github.com/devleo-m/go-zero/internal/modules/user/domain"
+)
+
+// UpdateUserUseCase implementa o caso de uso de atualizar usuário.
+type UpdateUserUseCase struct {
+	userRepo domain.Repository
+}
+
+// NewUpdateUserUseCase cria uma nova instância do caso de uso.
+func NewUpdateUserUseCase(userRepo domain.Repository) *UpdateUserUseCase {
+	return &UpdateUserUseCase{
+		userRepo: userRepo,
+	}
+}
+
+// UpdateUserInput representa os dados de entrada.
+type UpdateUserInput struct {
+	Phone *string   `json:"phone,omitempty"`
+	Name  string    `json:"name" validate:"required,min=2,max=100"`
+	ID    uuid.UUID `json:"id" validate:"required"`
+}
+
+// UpdateUserOutput representa os dados de saída.
+type UpdateUserOutput struct {
+	User    *domain.User `json:"user"`
+	Message string       `json:"message"`
+}
+
+// Execute executa o caso de uso.
+func (uc *UpdateUserUseCase) Execute(ctx context.Context, input UpdateUserInput) (*UpdateUserOutput, error) {
+	// Buscar usuário existente
+	user, err := uc.userRepo.GetByID(ctx, input.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	// Atualizar perfil
+	if err := user.UpdateProfile(input.Name, input.Phone); err != nil {
+		return nil, fmt.Errorf("failed to update profile: %w", err)
+	}
+
+	// Salvar no banco
+	if err := uc.userRepo.Update(ctx, user); err != nil {
+		return nil, fmt.Errorf("failed to save user: %w", err)
+	}
+
+	return &UpdateUserOutput{
+		User:    user,
+		Message: "User updated successfully",
+	}, nil
+}

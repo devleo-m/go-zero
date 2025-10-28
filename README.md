@@ -604,9 +604,9 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 Have questions? Found a bug? Want to contribute?
 
-- **GitHub Issues:** [Create an issue](https://github.com/yourusername/go-zero/issues)
-- **Discussions:** [Join the conversation](https://github.com/yourusername/go-zero/discussions)
-- **Email:** your.email@example.com
+- **GitHub Issues:** [Create an issue](https://github.com/devleo-m/go-zero/issues)
+- **Discussions:** [Join the conversation](https://github.com/devleo-m)
+- **Email:** dev.leomadeira@gmail.com
 
 ---
 
@@ -616,6 +616,6 @@ Have questions? Found a bug? Want to contribute?
 
 ⭐ **Star this repo if you find it helpful!**
 
-[Report Bug](https://github.com/yourusername/go-zero/issues) · [Request Feature](https://github.com/yourusername/go-zero/issues) · [Contribute](https://github.com/yourusername/go-zero/pulls)
+<!-- [Report Bug](https://github.com/yourusername/go-zero/issues) · [Request Feature](https://github.com/yourusername/go-zero/issues) · [Contribute](https://github.com/yourusername/go-zero/pulls) -->
 
 </div>
