@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 
 	"github.com/devleo-m/go-zero/internal/infrastructure"
@@ -17,6 +18,11 @@ import (
 )
 
 func main() {
+	// Carregar variáveis de ambiente do .env
+	if err := godotenv.Load(); err != nil {
+		log.Println("Warning: .env file not found, using system environment variables")
+	}
+
 	// Carregar configurações
 	cfg, err := config.Load()
 	if err != nil {
